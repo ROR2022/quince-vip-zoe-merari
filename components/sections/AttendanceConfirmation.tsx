@@ -207,7 +207,7 @@ ${formData.mensaje ? `💌 *Mensaje especial:*\n${formData.mensaje}` : ""}
   return (
     <section
       style={{
-        background: "url('/images/fondoAzul1.jpg')",
+        background: "url('/images/fondoAzul2.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",

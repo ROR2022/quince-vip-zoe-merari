@@ -4,6 +4,7 @@ import React, {useEffect, useState} from 'react'
 //import Image from 'next/image'
 import { Heart } from 'lucide-react'
 import { weddingData } from '../../data/weddingData'
+import BackgroundCarrousel from '../../components/sections/BackgroundCarrousel'
 //import { getOverlayStyle } from '@/utils/overlay'
 //import { useScrollAnimation } from '@/hooks/useScrollAnimation'
 //import { getAnimationConfig } from '@/data/animationConfig'
@@ -66,7 +67,7 @@ export default function HeroSection() {
       className="min-h-screen flex flex-col justify-center items-center relative pt-20"
     >
       
-      
+      <BackgroundCarrousel />
       
       {/* Contenido principal - Usar solo animación CSS, no scroll-based */}
       <div 

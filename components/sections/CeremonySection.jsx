@@ -51,7 +51,7 @@ export default function CeremonySection() {
     <section
       ref={sectionRef}
       style={{
-        backgroundImage: `url('/images/fondoAzul1.jpg')`,
+        backgroundImage: `url('/images/fondoAzul2.jpg')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",

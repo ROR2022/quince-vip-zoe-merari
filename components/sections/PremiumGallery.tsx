@@ -95,7 +95,7 @@ export function PremiumGallery() {
   return (
     <section 
     style={{
-      background: 'url(/images/fondoAzul1.jpg)',
+      background: 'url(/images/fondoAzul2.jpg)',
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
@@ -128,7 +128,7 @@ export function PremiumGallery() {
           </p>
         </div>
 
-        <div className="divider">
+        <div className="divider flex items-center justify-center my-4">
           <div className="divider-icon">
             <Camera className="w-8 h-8" style={{ color: '#e3aaaa' }} />
           </div>
