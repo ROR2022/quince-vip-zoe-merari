@@ -89,10 +89,10 @@ export default function GiftsSection() {
             <div className="bg-white/70 p-6 rounded-2xl w-64">
               <h4 className="text-xl font-medium mb-2">Lluvia de Sobres</h4>
               <p className="text-muted-foreground">
-                Tu presencia es el mejor regalo, pero si lo deseas,
+                
               </p>
               <p className="text-muted-foreground">
-                puedes regalarme efectivo en un sobre.
+                Puedes regalarme efectivo en un sobre.
               </p>
             </div>
             <div 

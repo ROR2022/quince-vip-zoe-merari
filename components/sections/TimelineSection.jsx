@@ -82,7 +82,7 @@ export default function TimelineSection() {
                   className={isVisible ? completeClass : basicClass}
                 >
                   <Image
-                    src="/images/quinceAzul4.jpg"
+                    src="/images/zoeMerari6.jpg"
                     alt="Celebración"
                     fill
                     className="object-cover"

@@ -88,7 +88,7 @@ export const weddingData = {
   // 🎁 Información de regalos
   gifts: {
     type: "Lluvia de sobres",
-    message: "Que estés conmigo está noche es lo más importante para nosotros, el obsequio que deses darme es de tu elección."
+    message: "Que estés conmigo está noche es lo más importante para nosotros."
   },
 
   // 📸 Galería de imágenes

@@ -89,7 +89,7 @@ export default function CeremonySection() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="relative w-full flex justify-center items-center h-96 rounded-2xl shadow-lg overflow-hidden">
               <Image
-                src="/images/quinceAzul3.jpg"
+                src="/images/zoeMerari5.jpg"
                 alt="Pareja al atardecer"
                 fill
                 className="object-cover "
