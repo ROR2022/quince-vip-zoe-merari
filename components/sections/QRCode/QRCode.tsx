@@ -175,7 +175,7 @@ const QRCode = () => {
               date: "18 de Octubre 2025",
               venue: "Paseo Real Casino 480",
               qrCodeUrl: "https://quince-vip-zoe-merari.vercel.app/gallery",
-              photoUrl: "/images/frida6.jpg",
+              photoUrl: "/images/qrcode.png",
               websiteUrl: "https://quince-vip-zoe-merari.vercel.app/qrcode",
               message: "Comparte momentos únicos en mi día especial"
             }}

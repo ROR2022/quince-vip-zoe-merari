@@ -119,6 +119,7 @@ export const useQRGeneration = (eventData: QREventData) => {
   return {
     isGenerating: state.isGenerating,
     qrDataURL: state.qrDataURL,
+    qrCodeUrl: eventData.qrCodeUrl,
     error: state.error,
     generateQR,
     generateCustomQR,
