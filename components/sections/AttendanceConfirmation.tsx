@@ -207,10 +207,11 @@ ${formData.mensaje ? `💌 *Mensaje especial:*\n${formData.mensaje}` : ""}
   return (
     <section
       style={{
-        background: "url('/images/fondoAzul2.jpg')",
+        /* background: "url('/images/fondoAzul2.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
+        backgroundRepeat: "no-repeat", */
+        backgroundColor: "#fff",
       }}
       className="relative py-20 px-4"
     >
@@ -234,7 +235,7 @@ ${formData.mensaje ? `💌 *Mensaje especial:*\n${formData.mensaje}` : ""}
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto relative">
+      <div className="max-w-2xl mx-auto relative bg-slate-300 bg-opacity-50 rounded-3xl">
         <div
           className="rounded-3xl p-10 shadow-2xl backdrop-blur-sm border-2 relative overflow-hidden"
           style={{

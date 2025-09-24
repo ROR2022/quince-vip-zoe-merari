@@ -51,10 +51,11 @@ export default function CeremonySection() {
     <section
       ref={sectionRef}
       style={{
-        backgroundImage: `url('/images/fondoAzul2.jpg')`,
+        /* backgroundImage: `url('/images/fondoAzul2.jpg')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
+        backgroundRepeat: "no-repeat", */
+        backgroundColor: "#fff",
         position: "relative",
         zIndex: 5000,
         ...animationStyle,
@@ -75,9 +76,9 @@ export default function CeremonySection() {
           willChange: "transform, opacity", // Optimización para móviles
           position: "relative",
           zIndex: 4000,
-          backgroundColor: "#C8BFE780",
+          //backgroundColor: "#C8BFE780",
         }}
-        className="container bg-slate-300 bg-opacity-60 mx-auto px-4  p-6 rounded-2xl"
+        className="container mx-auto px-4  p-6 rounded-2xl"
       >
         <div
           style={{

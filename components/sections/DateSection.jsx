@@ -50,10 +50,11 @@ export default function DateSection() {
     <section 
       ref={sectionRef}
       style={{
-         backgroundImage: `url('/images/fondoAzul2.jpg')`,
+         /* backgroundImage: `url('/images/fondoAzul2.jpg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat', 
+        backgroundRepeat: 'no-repeat',  */
+        backgroundColor: '#fff',
         position: 'relative',
         //...animationStyle
       }} 
@@ -73,9 +74,9 @@ export default function DateSection() {
         style={{
           // Remover animación CSS duplicada, usar solo scroll animation
           willChange: 'transform, opacity', // Optimización para móviles
-          backgroundColor: "#C8BFE795",
+          //backgroundColor: "#C8BFE795",
         }}
-        className="container bg-slate-300 bg-opacity-60 rounded-b-2xl mx-auto px-4  p-6 rounded-2xl"
+        className="container rounded-b-2xl mx-auto px-4  p-6 rounded-2xl"
       >
         <div className="max-w-4xl mx-auto text-center space-y-8">
           <p className="text-lg text-muted-foreground italic">
@@ -86,7 +87,7 @@ export default function DateSection() {
           style={{
             textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)',
           }}
-          className="font-main-text text-4xl text-white font-bold">FECHA ESPECIAL</h2>
+          className="font-main-text text-4xl text-indigo-700 font-bold">FECHA ESPECIAL</h2>
 
           <div className="bg-primary/20 rounded-3xl p-12 max-w-md mx-auto">
             <div className="text-2xl font-medium text-foreground mb-2">

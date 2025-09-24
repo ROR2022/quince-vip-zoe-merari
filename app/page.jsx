@@ -27,7 +27,7 @@ export default function WeddingInvitation() {
 
   const handleOpenInvitation = () => {
     setIsOpenInvitation(true);
-    setIsWelcomeMessageVisible(true);
+    //setIsWelcomeMessageVisible(true);
   };
 
    const handleContinue = () => {

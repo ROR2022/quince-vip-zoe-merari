@@ -35,10 +35,11 @@ export default function ParentsSection() {
   return (
     <section 
     style={{
-      backgroundImage: `url('/images/fondoAzul2.jpg')`,
+      /* backgroundImage: `url('/images/fondoAzul2.jpg')`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
+      backgroundRepeat: 'no-repeat', */
+      backgroundColor: '#fff',
       position: 'relative',
     }}
     id="parents" className="py-20 bg-muted/30">
@@ -48,11 +49,11 @@ export default function ParentsSection() {
             
             <div
               style={{
-                backgroundColor: "#C8BFE780",
+                //backgroundColor: "#C8BFE780",
               }}
               className="relative p-6 rounded-2xl z-10 text-center space-y-8 py-12"
             >
-              <p className="text-lg text-white italic max-w-2xl mx-auto leading-relaxed">
+              <p className="text-lg text-black italic max-w-2xl mx-auto leading-relaxed">
                 Hoy, mi corazón rebosa de gratitud. Doy gracias a Dios por cada paso de mi vida y a mis padres  
                 por cuidarme y guiarme en este camino.
                 Hace quince años mis padres agradecieron a Dios por mi vida. 
@@ -64,7 +65,7 @@ export default function ParentsSection() {
                   <h3 className={isVisible ? completeClass : basicClass}>
                     Mis papás
                   </h3>
-                  <div className="space-y-2 text-white">
+                  <div className="space-y-2 text-black">
                     <p className="text-xl font-medium">
                       Pedro Ortiz Casas
                     </p>
@@ -78,7 +79,7 @@ export default function ParentsSection() {
                   <h3 className={isVisible ? completeClass : basicClass}>
                     Mi hermana
                   </h3>
-                  <div className="space-y-2 text-white">
+                  <div className="space-y-2 text-black">
                     <p className="text-xl font-medium">Alexa Renata</p>
                   </div>
                 </div>

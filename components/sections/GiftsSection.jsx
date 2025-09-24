@@ -15,8 +15,8 @@ export default function GiftsSection() {
   const [scrollPosition, setScrollPosition] = useState(window.scrollY);
   const [isVisible, setIsVisible] = useState(false);
 
-  const basicClass = "font-main-text text-5xl text-white";
-  const completeClass = "font-main-text text-5xl text-white scale-up-center";
+  const basicClass = "font-main-text text-5xl text-indigo-800";
+  const completeClass = "font-main-text text-5xl text-indigo-800 scale-up-center";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,10 +48,11 @@ export default function GiftsSection() {
     <section
       ref={sectionRef}
       style={{
-        backgroundImage: `url('/images/fondoAzul2.jpg')`,
+        /* backgroundImage: `url('/images/fondoAzul2.jpg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
+        backgroundRepeat: 'no-repeat', */
+        backgroundColor: "#fff",
         position: "relative",
         ...animationStyle,
       }}
@@ -67,9 +68,9 @@ export default function GiftsSection() {
       <div
         style={{
           animation: "bounce1 2s ease 0s 1 normal forwards",
-          backgroundColor: "#C8BFE795",
+          //backgroundColor: "#C8BFE795",
         }}
-        className="container bg-slate-300 bg-opacity-60 mx-auto px-4  p-6 rounded-2xl"
+        className="container mx-auto px-4  p-6 rounded-2xl"
       >
         <div className="max-w-4xl mx-auto text-center space-y-8">
           <h2 

@@ -97,10 +97,11 @@ export default function DressCodeSection() {
       id="dresscode"
       className="py-20"
       style={{
-         backgroundImage: `url('/images/fondoAzul2.jpg')`,
+         /* backgroundImage: `url('/images/fondoAzul2.jpg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',  
+        backgroundRepeat: 'no-repeat',   */
+        backgroundColor: '#fff',
         position: "relative",
         zIndex: 5000, // Asegurar que la sección esté por encima de otros elementos
         ...animationStyle,
@@ -115,7 +116,7 @@ export default function DressCodeSection() {
       <div
         style={{
           animation: "bounce1 2s ease 0s 1 infinite",
-          backgroundColor: "#C8BFE795",
+          //backgroundColor: "#C8BFE795",
         }}
         className="container mx-auto px-4  p-6 rounded-2xl"
       >
@@ -157,7 +158,7 @@ export default function DressCodeSection() {
           <h3 className="text-3xl font-bold text-foreground">
             {dressCode.type}
           </h3>
-          <p className="text-lg text-white">{dressCode.note}</p>
+          <p className="text-2xl text-sky-700">{dressCode.note}</p>
 
           <p className="text-xl text-indigo-800 my-4 text-bold">Restricción: No Niños</p>
 

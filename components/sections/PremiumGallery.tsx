@@ -95,16 +95,17 @@ export function PremiumGallery() {
   return (
     <section 
     style={{
-      background: 'url(/images/fondoAzul2.jpg)',
+      /* background: 'url(/images/fondoAzul2.jpg)',
       backgroundSize: 'cover',
       backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
+      backgroundRepeat: 'no-repeat', */
+      backgroundColor: '#fff',
       position: 'relative',
     }}
     className="py-16 px-4">
       <div
         ref={ref}
-        className={`bg-white bg-opacity-70 p-4 rounded-2xl max-w-4xl mx-auto text-center transition-all duration-1000 ${
+        className={` p-4 rounded-2xl max-w-4xl mx-auto text-center transition-all duration-1000 ${
           isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
@@ -116,7 +117,7 @@ export function PremiumGallery() {
 
           <h2 
           className={isVisible ? completeClass : basicClass} 
-          style={{ color: '#fff', textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)' }}
+          style={{ color: '#ddd', textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)' }}
           >
             {premiumDemoData.gallery.title}
           </h2>

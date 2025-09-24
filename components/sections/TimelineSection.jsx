@@ -49,10 +49,11 @@ export default function TimelineSection() {
     <section
       ref={sectionRef}
       style={{
-          backgroundImage: `url('/images/fondoAzul2.jpg')`,
+          /* backgroundImage: `url('/images/fondoAzul2.jpg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',  
+        backgroundRepeat: 'no-repeat',   */
+        backgroundColor: '#fff',
         position: 'relative',
         ...animationStyle
       }}
@@ -92,7 +93,7 @@ export default function TimelineSection() {
               </div>
             </div>
 
-            <div className="space-y-6 bg-slate-400 bg-opacity-80 p-6 rounded-2xl">
+            <div className="space-y-6 p-6 rounded-2xl">
               {timeline.map((item, index) => (
                 <div 
                   key={item.id} 
