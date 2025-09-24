@@ -62,6 +62,13 @@ export const weddingData = {
       color: "primary"
     },
     {
+      id: "fiesta",
+      name: "Fiesta",
+      time: "8:00",
+      icon: "🎉", // Confeti - celebración y alegría
+      color: "secondary"
+    },
+    {
       id: "cena",
       name: "Cena",
       time: "9:00",
