@@ -349,7 +349,7 @@ const GuestsManagement = () => {
                   }}
                 >
                   <UserPlus className="w-6 h-6" />
-                  <span className="text-lg text-black font-semibold">Agregar Primer Invitado</span>
+                  <span className="text-lg font-semibold">Agregar Primer Invitado</span>
                 </button>
               )}
             </div>

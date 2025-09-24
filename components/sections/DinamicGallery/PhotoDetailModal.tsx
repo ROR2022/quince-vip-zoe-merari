@@ -86,6 +86,7 @@ const PhotoDetailModal: React.FC<PhotoDetailModalProps> = ({
   const handleDeleteFromModal = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDeletePhoto(photo, e);
+    onClose();
   };
 
   // Función para descargar imagen

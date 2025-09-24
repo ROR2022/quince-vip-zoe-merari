@@ -76,12 +76,12 @@ const QRCode = () => {
               fontFamily: 'serif'
             }}
           >
-            ROSY ABIGAIL
+            ZOE MERARI
           </h1>
 
           <div className='mb-6'>
             <Image
-              src="/images/quinceB&B4.jpeg"
+              src="/images/zoeMerari3.jpg"
               alt="Frida"
               width={200}
               height={150}
@@ -165,16 +165,18 @@ const QRCode = () => {
         </div>
 
         {/* Sección de descarga de QR */}
-        <div className="mb-8">
+        <div 
+        //style={{display:'none'}}
+        className="mb-8">
           <QRDownloadContainer 
             eventData={{
-              name: "FRIDA",
+              name: "ZOE MERARI",
               title: "Mis XV Años",
-              date: "27 de Septiembre 2025",
-              venue: "Salón de Eventos Aurora",
-              qrCodeUrl: "https://quince-premium-frida.vercel.app/gallery",
+              date: "18 de Octubre 2025",
+              venue: "Paseo Real Casino 480",
+              qrCodeUrl: "https://quince-vip-zoe-merari.vercel.app/gallery",
               photoUrl: "/images/frida6.jpg",
-              websiteUrl: "https://quince-premium-frida.vercel.app/gallery",
+              websiteUrl: "https://quince-vip-zoe-merari.vercel.app/qrcode",
               message: "Comparte momentos únicos en mi día especial"
             }}
           />
