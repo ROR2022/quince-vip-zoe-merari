@@ -341,15 +341,15 @@ const GuestsManagement = () => {
               {(!filters.search && filters.status === 'all' && filters.relation === 'all') && (
                 <button
                   onClick={handleAddGuest}
-                  className="inline-flex items-center gap-3 px-8 py-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 shadow-lg"
+                  className="bg-slate-200 inline-flex items-center gap-3 px-8 py-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 shadow-lg"
                   style={{
-                    background: 'linear-gradient(135deg, var(--color-aurora-lavanda), var(--color-aurora-rosa))',
-                    borderColor: 'var(--color-aurora-rosa)',
-                    color: 'white'
+                    //background: 'linear-gradient(135deg, var(--color-aurora-lavanda), var(--color-aurora-rosa))',
+                    //borderColor: 'var(--color-aurora-rosa)',
+                    //color: 'white'
                   }}
                 >
                   <UserPlus className="w-6 h-6" />
-                  <span className="text-lg font-semibold">Agregar Primer Invitado</span>
+                  <span className="text-lg font-semibold text-black">Agregar Primer Invitado</span>
                 </button>
               )}
             </div>

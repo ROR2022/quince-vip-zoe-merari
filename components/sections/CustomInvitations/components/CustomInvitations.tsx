@@ -88,22 +88,7 @@ const CustomInvitations: React.FC = () => {
       
 
       <div className="max-w-4xl mx-auto mt-32 text-center relative z-10">
-        {/* <h1 className="bg-gradient-to-r from-purple-700 via-fuchsia-500 to-purple-700 bg-clip-text text-transparent text-4xl md:text-5xl font-bold mb-6 drop-shadow-sm">
-          Invitaciones Personalizadas Quinceañera
-        </h1>
-        <p className="text-lg text-fuchsia-700 mb-8 max-w-2xl mx-auto">
-          Crea invitaciones mágicas y personalizadas para la fiesta de XV años, con mensajes especiales y envío directo por WhatsApp.
-        </p>
-        
-        {!authState.isAuthenticated && (
-          <div className="mt-12 p-6 bg-white/90 rounded-2xl border-2 border-fuchsia-200 shadow-lg max-w-xl mx-auto relative z-20">
-            <div className="text-fuchsia-500 font-semibold mb-4">🔐 Acceso Restringido</div>
-            <p className="text-gray-600 text-sm">Esta herramienta es exclusiva para la creación de invitaciones personalizadas. Accede como administrador para comenzar.</p>
-            <div className="mt-4 p-3 bg-fuchsia-50 rounded-lg">
-              <p className="text-xs text-fuchsia-600">💡 <strong>Tip:</strong> Haz clic en el ícono ⚙️ en la esquina superior derecha</p>
-            </div>
-          </div>
-        )} */}
+       
 
         {authState.isAuthenticated && (
           <div className="max-w-4xl mx-auto mt-12 space-y-8">
