@@ -24,8 +24,12 @@ const GuestsManagement = () => {
     guests,
     loading,
     error,
-    filters,
-    updateFilters,
+    tempFilters,          // ✅ Filtros temporales (UI)
+    appliedFilters,       // ✅ Filtros aplicados (API)
+    updateTempFilters,    // ✅ Para actualizar UI
+    applyFilters,         // ✅ Para ejecutar búsqueda
+    clearFilters,         // ✅ Para limpiar filtros
+    hasUnappliedChanges,  // ✅ Para indicador visual
     refresh,
     clearError,
     createGuest,
@@ -36,7 +40,13 @@ const GuestsManagement = () => {
   // Hook para estadísticas
   const {
     refresh: refreshStats,
-    loading: statsLoading
+    loading: statsLoading,
+    error: statsError,
+    totalGuests: statsTotalGuests,
+    totalConfirmed: statsTotalConfirmed,
+    totalPending: statsTotalPending,
+    confirmationRate: statsConfirmationRate,
+    totalGuestCount: statsTotalGuestCount
   } = useGuestStats();
 
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
@@ -46,16 +56,49 @@ const GuestsManagement = () => {
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const router = useRouter();
 
-  // Función combinada para actualizar invitados y estadísticas
-  const handleRefreshAll = useCallback(async () => {
-    refresh(); // Actualizar lista de invitados
-    refreshStats(); // Actualizar estadísticas
-  }, [refresh, refreshStats]);
 
-   useEffect(() => {
-    // cargar invitados solo cuando se monta el componente
-    handleRefreshAll();
+  //necesito ejecutar una carga inicial solo cuando el usuario
+  // entra por primera vez a la página
+  useEffect(() => {
+    refresh(); // Cargar invitados inicialmente
+    refreshStats({ search: '', status: 'all', relation: 'all' }); // Cargar estadísticas inicialmente
   }, []);
+
+  // ✅ Función combinada para actualizar invitados y estadísticas CON FILTROS
+  const handleRefreshAll = useCallback(async () => {
+    console.log('🔄 Refreshing data with applied filters:', appliedFilters);
+    refresh(); // Actualizar lista de invitados (ya usa appliedFilters)
+    refreshStats(appliedFilters); // ✅ Actualizar estadísticas con mismos filtros
+  }, [refresh, refreshStats, appliedFilters]);
+
+  // ✅ CARGA MANUAL: Usuario controla cuándo cargar datos
+  // No hay useEffect automático - el usuario debe usar el botón "Cargar Invitados"
+  // o aplicar filtros para ejecutar búsquedas
+
+  // ✅ Función para aplicar filtros Y actualizar estadísticas
+  const handleApplyFilters = useCallback(() => {
+    console.log('🚀 Applying filters and updating stats:', tempFilters);
+    applyFilters(); // Aplicar filtros a la lista
+    
+    // ✅ Actualizar estadísticas manualmente DESPUÉS de aplicar filtros
+    setTimeout(() => {
+      refreshStats(tempFilters);
+    }, 100); // Pequeño delay para asegurar que appliedFilters se actualice
+  }, [applyFilters, tempFilters, refreshStats]);
+
+  // ✅ Función para limpiar filtros Y actualizar estadísticas  
+  const handleClearFilters = useCallback(() => {
+    console.log('🧹 Clearing filters and updating stats');
+    clearFilters(); // Limpiar filtros
+    
+    // ✅ Actualizar estadísticas manualmente DESPUÉS de limpiar filtros
+    setTimeout(() => {
+      refreshStats({ search: '', status: 'all', relation: 'all' });
+    }, 100);
+  }, [clearFilters, refreshStats]);
+
+  // ❌ REMOVIDO: useEffect que causaba loop infinito
+  // Las estadísticas se actualizan manualmente en las funciones específicas
  
   // Determinar si está cargando (cualquiera de los dos)
   const isLoading = loading || statsLoading;
@@ -180,7 +223,15 @@ const GuestsManagement = () => {
         </div>
 
         {/* Estadísticas */}
-        <StatsCards />
+        <StatsCards 
+          totalGuests={statsTotalGuests}
+          totalConfirmed={statsTotalConfirmed}
+          totalPending={statsTotalPending}
+          confirmationRate={statsConfirmationRate}
+          totalGuestCount={statsTotalGuestCount}
+          loading={statsLoading}
+          error={statsError}
+        />
 
         {/* Mensaje de error */}
         {error && (
@@ -200,8 +251,11 @@ const GuestsManagement = () => {
 
         {/* Búsqueda y filtros */}
         <SearchAndFilters
-          filters={filters}
-          onFiltersChange={updateFilters}
+          filters={tempFilters}           // ✅ Pasar filtros temporales
+          onFiltersChange={updateTempFilters}  // ✅ Usar función temporal
+          onApplyFilters={handleApplyFilters}   // ✅ Usar nueva función sincronizada
+          onClearFilters={handleClearFilters}   // ✅ Usar nueva función sincronizada
+          hasUnappliedChanges={hasUnappliedChanges} // ✅ Para indicador visual
           totalResults={guests.length}
           loading={loading}
         />
@@ -323,22 +377,22 @@ const GuestsManagement = () => {
                 className="text-2xl font-bold mb-4"
                 style={{ color: 'var(--color-aurora-lavanda)' }}
               >
-                {!loading && guests.length === 0 && !filters.search && filters.status === 'all' && filters.relation === 'all'
+                {!loading && guests.length === 0 && !appliedFilters.search && appliedFilters.status === 'all' && appliedFilters.relation === 'all'
                   ? 'Lista de Invitados'
                   : 'No hay invitados registrados'
                 }
               </h3>
               
               <p className="text-lg mb-8" style={{ color: 'var(--color-aurora-rosa)' }}>
-                {!loading && guests.length === 0 && !filters.search && filters.status === 'all' && filters.relation === 'all'
+                {!loading && guests.length === 0 && !appliedFilters.search && appliedFilters.status === 'all' && appliedFilters.relation === 'all'
                   ? 'Haz clic en "Cargar Invitados" para ver la lista completa o agrega tu primer invitado'
-                  : filters.search || filters.status !== 'all' || filters.relation !== 'all'
+                  : appliedFilters.search || appliedFilters.status !== 'all' || appliedFilters.relation !== 'all'
                     ? 'No se encontraron invitados con los filtros aplicados'
                     : 'Comienza agregando tu primer invitado para la quinceañera'
                 }
               </p>
               
-              {(!filters.search && filters.status === 'all' && filters.relation === 'all') && (
+              {(!appliedFilters.search && appliedFilters.status === 'all' && appliedFilters.relation === 'all') && (
                 <button
                   onClick={handleAddGuest}
                   className="bg-slate-200 inline-flex items-center gap-3 px-8 py-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 shadow-lg"

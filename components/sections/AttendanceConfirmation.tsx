@@ -20,9 +20,181 @@ const AttendanceConfirmation = () => {
     mensaje: "",
   });
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showPopupModal, setShowPopupModal] = useState(false);
 
   // Número de WhatsApp de destino
   const whatsappNumber = "5218711249363"; // +52 1 8711249363
+
+  // Función para detectar si los pop-ups están bloqueados
+  const checkPopupBlocked = () => {
+    try {
+      const popup = window.open('', '', 'width=1,height=1');
+      if (popup && !popup.closed) {
+        popup.close();
+        return false; // No bloqueado
+      }
+      return true; // Bloqueado
+    } catch {
+      return true; // Error = bloqueado
+    }
+  };
+
+  // Función para detectar dispositivo y navegador
+  const getDeviceAndBrowserInfo = () => {
+    const userAgent = navigator.userAgent;
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+    const isAndroid = /Android/.test(userAgent);
+    
+    return {
+      isMobile,
+      isIOS,
+      isAndroid,
+      userAgent,
+      isChromeMobile: isMobile && userAgent.includes('Chrome'),
+      isFirefoxMobile: isMobile && userAgent.includes('Firefox'),
+      isSafariMobile: isIOS && userAgent.includes('Safari'),
+    };
+  };
+
+  // Función para obtener instrucciones específicas por navegador y dispositivo
+  const getBrowserInstructions = () => {
+    const deviceInfo = getDeviceAndBrowserInfo();
+    
+    // Instrucciones para dispositivos móviles
+    if (deviceInfo.isMobile) {
+      if (deviceInfo.isIOS) {
+        return {
+          title: "📱 iPhone/iPad",
+          steps: [
+            "1. Ve a Configuración de tu iPhone",
+            "2. Busca y toca 'Safari'", 
+            "3. Desactiva 'Bloquear ventanas emergentes'",
+            "4. Regresa aquí y confirma de nuevo"
+          ],
+          showAlternative: true
+        };
+      }
+      
+      if (deviceInfo.isAndroid) {
+        return {
+          title: "📱 Android",
+          steps: [
+            "1. Toca los 3 puntos ⋮ (esquina superior)",
+            "2. Configuración → Configuración de sitios",
+            "3. 'Ventanas emergentes' → Permitir",
+            "4. Regresa y confirma de nuevo"
+          ],
+          showAlternative: true
+        };
+      }
+      
+      // Móvil genérico
+      return {
+        title: "📱 Teléfono móvil",
+        steps: [
+          "1. Busca el menú de configuración del navegador",
+          "2. Encuentra 'Pop-ups' o 'Ventanas emergentes'",
+          "3. Permítelos para este sitio",
+          "4. Regresa e intenta de nuevo"
+        ],
+        showAlternative: true
+      };
+    }
+    
+    // Instrucciones para escritorio (mantenemos las originales)
+    if (deviceInfo.userAgent.includes('Chrome')) {
+      return {
+        title: "🖥️ Chrome",
+        steps: [
+          "1. Busca el ícono 🚫 en la barra de direcciones",
+          "2. Haz clic en él y selecciona 'Permitir pop-ups'"
+        ],
+        showAlternative: false
+      };
+    }
+    
+    if (deviceInfo.userAgent.includes('Firefox')) {
+      return {
+        title: "🖥️ Firefox", 
+        steps: [
+          "1. Busca el escudo 🛡️ junto a la dirección",
+          "2. Clic → Desactivar 'Bloquear ventanas emergentes'"
+        ],
+        showAlternative: false
+      };
+    }
+    
+    if (deviceInfo.userAgent.includes('Safari')) {
+      return {
+        title: "🖥️ Safari",
+        steps: [
+          "1. Safari → Preferencias → Sitios web",
+          "2. Ventanas emergentes → Permitir para este sitio"
+        ],
+        showAlternative: false
+      };
+    }
+    
+    if (deviceInfo.userAgent.includes('Edge')) {
+      return {
+        title: "🖥️ Edge",
+        steps: [
+          "1. Busca el ícono 🚫 en la barra de direcciones",
+          "2. Clic → 'Permitir ventanas emergentes'"
+        ],
+        showAlternative: false
+      };
+    }
+    
+    // Fallback genérico
+    return {
+      title: "🌐 Navegador",
+      steps: [
+        "Busca el ícono de pop-ups bloqueados en tu navegador",
+        "y permítelos para este sitio"
+      ],
+      showAlternative: deviceInfo.isMobile
+    };
+  };
+
+  // Función para copiar mensaje al portapapeles
+  const copyMessageToClipboard = async () => {
+    if (!formData.nombre.trim()) {
+      alert("Por favor ingresa tu nombre primero");
+      return;
+    }
+
+    // Construir el mensaje igual que en processConfirmation
+    const confirmacionTexto = formData.confirmacion === "si" ? "✅ ¡Confirmo mi asistencia!" : "❌ No podré asistir";
+    const invitadosTexto = formData.numeroInvitados === 1 ? "1 persona" : `${formData.numeroInvitados} personas`;
+
+    const mensaje = `🎉 *CONFIRMACIÓN DE ASISTENCIA* 🎉
+
+👤 *Nombre:* ${formData.nombre}
+${formData.telefono ? `📱 *Teléfono:* ${formData.telefono}` : ""}
+
+${confirmacionTexto}
+👥 *Número de invitados:* ${invitadosTexto}
+
+${formData.mensaje ? `💌 *Mensaje especial:*\n${formData.mensaje}` : ""}
+
+¡Gracias por responder! 💖✨`;
+
+    try {
+      await navigator.clipboard.writeText(mensaje);
+      alert("✅ ¡Mensaje copiado! Ahora abre WhatsApp y envíalo a:\n+52 1 871 124 9363");
+      setShowPopupModal(false);
+      
+      // Procesar confirmación automática en backend
+      processConfirmation();
+    } catch (error) {
+      // Fallback si no funciona clipboard API
+      prompt("Copia este mensaje y envíalo por WhatsApp:", mensaje);
+      setShowPopupModal(false);
+      processConfirmation();
+    }
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -39,6 +211,17 @@ const AttendanceConfirmation = () => {
   const handleConfirmAttendance = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Verificar pop-ups bloqueados ANTES de procesar
+    if (checkPopupBlocked()) {
+      setShowPopupModal(true);
+      return;
+    }
+
+    // Continuar con el procesamiento normal
+    await processConfirmation();
+  };
+
+  const processConfirmation = async () => {
     // Validación simple
     if (!formData.nombre.trim()) {
       alert("Por favor ingresa tu nombre");
@@ -201,7 +384,131 @@ ${formData.mensaje ? `💌 *Mensaje especial:*\n${formData.mensaje}` : ""}
         setShowSuccess(false);
       }, 3000);
     }, 1500);
+  };
+
+  // Componente Modal para Pop-up Blocker
+  const PopupBlockerModal = () => {
+    const instructions = getBrowserInstructions();
+    const deviceInfo = getDeviceAndBrowserInfo();
     
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div 
+          className="bg-white p-6 rounded-3xl max-w-md w-full text-center shadow-2xl border-2 max-h-[90vh] overflow-y-auto"
+          style={{
+            background: "linear-gradient(135deg, rgba(255, 179, 217, 0.15) 0%, rgba(248, 246, 240, 0.98) 25%, rgba(230, 217, 255, 0.15) 50%, rgba(255, 242, 204, 0.2) 75%, rgba(253, 252, 252, 0.98) 100%)",
+            borderImage: "linear-gradient(45deg, var(--color-aurora-oro), var(--color-aurora-rosa), var(--color-aurora-lavanda)) 1",
+          }}
+        >
+          {/* Ícono explicativo */}
+          <div className="text-5xl mb-4">🚫➡️📱</div>
+          
+          <h3 
+            className="text-xl font-bold mb-3"
+            style={{ color: "var(--color-aurora-lavanda)" }}
+          >
+            Pop-ups Bloqueados
+          </h3>
+          
+          <p 
+            className="text-base mb-4 leading-relaxed"
+            style={{ color: "var(--color-aurora-rosa)" }}
+          >
+            Para abrir WhatsApp automáticamente:
+          </p>
+          
+          {/* Instrucciones específicas */}
+          <div 
+            className="p-4 rounded-2xl mb-4 text-left border"
+            style={{
+              backgroundColor: "rgba(255, 242, 204, 0.3)",
+              borderColor: "rgba(255, 179, 217, 0.3)",
+              color: "var(--color-aurora-lavanda)"
+            }}
+          >
+            <h4 className="font-bold mb-2 text-center">{instructions.title}</h4>
+            <div className="text-sm leading-relaxed">
+              {instructions.steps.map((step, index) => (
+                <div key={index} className="mb-1">{step}</div>
+              ))}
+            </div>
+          </div>
+
+          {/* Alternativa para móviles */}
+          {instructions.showAlternative && (
+            <div 
+              className="p-3 rounded-xl mb-4 text-center border-2 border-dashed"
+              style={{
+                backgroundColor: "rgba(255, 179, 217, 0.1)",
+                borderColor: "var(--color-aurora-rosa)"
+              }}
+            >
+              <p 
+                className="text-sm font-medium mb-3"
+                style={{ color: "var(--color-aurora-rosa)" }}
+              >
+                ¿Te parece complicado? 🤔
+              </p>
+              <button
+                onClick={copyMessageToClipboard}
+                className="w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 hover:opacity-90 shadow-lg mb-2"
+                style={{
+                  background: "linear-gradient(135deg, #10B981, #059669)",
+                  color: "white"
+                }}
+              >
+                📋 Copiar mensaje y enviar manualmente
+              </button>
+              <p className="text-xs opacity-75" style={{ color: "var(--color-aurora-lavanda)" }}>
+                📱 WhatsApp: +52 1 871 124 9363
+              </p>
+            </div>
+          )}
+          
+          {/* Botones principales */}
+          <div className="flex gap-3 flex-col sm:flex-row">
+            <button 
+              onClick={() => setShowPopupModal(false)}
+              className="flex-1 px-6 py-3 rounded-2xl font-medium transition-all duration-300 hover:opacity-80"
+              style={{
+                backgroundColor: "rgba(156, 163, 175, 0.8)",
+                color: "white"
+              }}
+            >
+              Cancelar
+            </button>
+            <button 
+              onClick={() => {
+                setShowPopupModal(false);
+                // Continuar con el proceso normal después de que el usuario permita pop-ups
+                processConfirmation();
+              }}
+              className="flex-1 px-6 py-3 rounded-2xl font-medium transition-all duration-300 hover:opacity-90 shadow-lg"
+              style={{
+                background: "linear-gradient(135deg, var(--color-aurora-rosa), var(--color-aurora-lavanda))",
+                color: "white"
+              }}
+            >
+              ✅ Ya permití, continuar
+            </button>
+          </div>
+
+          {/* Solo para desktop - opción alternativa al final */}
+          {!deviceInfo.isMobile && (
+            <div className="mt-4 pt-3 border-t border-gray-200">
+              <p className="text-xs text-gray-500 mb-2">¿No funciona?</p>
+              <button
+                onClick={copyMessageToClipboard}
+                className="text-sm underline hover:no-underline transition-all"
+                style={{ color: "var(--color-aurora-lavanda)" }}
+              >
+                Copiar mensaje manualmente
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -510,6 +817,9 @@ ${formData.mensaje ? `💌 *Mensaje especial:*\n${formData.mensaje}` : ""}
           </form>
         </div>
       </div>
+      
+      {/* Modal para Pop-up Blocker */}
+      {showPopupModal && <PopupBlockerModal />}
     </section>
   );
 };

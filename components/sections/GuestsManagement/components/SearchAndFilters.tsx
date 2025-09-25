@@ -5,6 +5,9 @@ import { GuestFilters, STATUS_OPTIONS, RELATION_OPTIONS } from '../types/guests.
 interface SearchAndFiltersProps {
   filters: GuestFilters;
   onFiltersChange: (filters: Partial<GuestFilters>) => void;
+  onApplyFilters?: () => void;        // ✅ Nueva prop para aplicar filtros
+  onClearFilters?: () => void;        // ✅ Nueva prop para limpiar filtros
+  hasUnappliedChanges?: boolean;      // ✅ Para indicador visual
   totalResults: number;
   loading?: boolean;
 }
@@ -12,6 +15,9 @@ interface SearchAndFiltersProps {
 const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
   filters,
   onFiltersChange,
+  onApplyFilters,           // ✅ Nueva prop
+  onClearFilters,           // ✅ Nueva prop
+  hasUnappliedChanges = false, // ✅ Nueva prop
   totalResults,
   loading = false
 }) => {
@@ -28,11 +34,16 @@ const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
   };
 
   const clearFilters = () => {
-    onFiltersChange({
-      search: '',
-      status: 'all',
-      relation: 'all'
-    });
+    // ✅ Usar la función del hook si está disponible, sino usar la local
+    if (onClearFilters) {
+      onClearFilters();
+    } else {
+      onFiltersChange({
+        search: '',
+        status: 'all',
+        relation: 'all'
+      });
+    }
   };
 
   const hasActiveFilters = filters.search || filters.status !== 'all' || filters.relation !== 'all';
@@ -186,24 +197,58 @@ const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
           </div>
         </div>
 
-        {/* Botón limpiar filtros */}
-        {hasActiveFilters && (
-          <div className="mt-4 flex justify-end">
-            <button
-              onClick={clearFilters}
-              disabled={loading}
-              className="inline-flex text-blue-700 items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:transform-none"
-              style={{
-                background: 'rgba(255, 179, 217, 0.1)',
-                borderColor: 'var(--color-aurora-rosa)',
-                //color: 'var(--color-aurora-rosa)'
-              }}
-            >
-              <X className="w-4 h-4" />
-              <span className="text-sm font-medium">Limpiar filtros</span>
-            </button>
+        {/* Botones de acción */}
+        <div className="mt-4 flex justify-between items-center gap-4">
+          {/* Indicador de cambios pendientes */}
+          {hasUnappliedChanges && onApplyFilters && (
+            <div className="text-sm text-amber-600 flex items-center gap-2">
+              <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+              Hay cambios sin aplicar
+            </div>
+          )}
+          
+          {/* Spacer para centrar botones cuando no hay indicador */}
+          {(!hasUnappliedChanges || !onApplyFilters) && <div></div>}
+
+          {/* Botones */}
+          <div className="flex gap-3">
+            {/* Botón Aplicar Filtros */}
+            {onApplyFilters && (
+              <button
+                onClick={onApplyFilters}
+                disabled={loading || !hasUnappliedChanges}
+                className={`inline-flex items-center gap-2 px-6 py-2 rounded-xl border-2 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:transform-none font-medium ${
+                  hasUnappliedChanges 
+                    ? 'text-black shadow-lg' 
+                    : 'text-purple-600'
+                }`}
+                style={{
+                  backgroundColor: '#ffb3d9',
+                  borderColor: '#ffb3d9'
+                }}
+              >
+                <Search className="w-4 h-4" />
+                <span className="text-sm">Aplicar filtros</span>
+              </button>
+            )}
+
+            {/* Botón limpiar filtros */}
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                disabled={loading}
+                className="inline-flex text-blue-700 items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:transform-none"
+                style={{
+                  background: 'rgba(255, 179, 217, 0.1)',
+                  borderColor: 'var(--color-aurora-rosa)',
+                }}
+              >
+                <X className="w-4 h-4" />
+                <span className="text-sm font-medium">Limpiar filtros</span>
+              </button>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

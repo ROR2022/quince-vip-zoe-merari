@@ -1,11 +1,19 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Guest, GuestsResponse, GuestResponse, GuestFilters, GuestFormData } from '../types/guests.types';
 
 export const useGuests = () => {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(false); // ✅ CAMBIADO: Inicia en false
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<GuestFilters>({
+  
+  // 🔄 NUEVO: Separar filtros temporales de los aplicados
+  const [tempFilters, setTempFilters] = useState<GuestFilters>({
+    search: '',
+    status: 'all',
+    relation: 'all'
+  });
+  
+  const [appliedFilters, setAppliedFilters] = useState<GuestFilters>({
     search: '',
     status: 'all',
     relation: 'all'
@@ -17,23 +25,35 @@ export const useGuests = () => {
       setLoading(true);
       setError(null);
 
-      // Construir query parameters
+      // ✅ Usar appliedFilters para la API
       const params = new URLSearchParams();
-      if (filters.search.trim()) {
-        params.append('search', filters.search.trim());
+      if (appliedFilters.search.trim()) {
+        params.append('search', appliedFilters.search.trim());
       }
-      if (filters.status !== 'all') {
-        params.append('status', filters.status);
+      if (appliedFilters.status !== 'all') {
+        params.append('status', appliedFilters.status);
       }
-      if (filters.relation !== 'all') {
-        params.append('relation', filters.relation);
+      if (appliedFilters.relation !== 'all') {
+        params.append('relation', appliedFilters.relation);
       }
       params.append('limit', '100'); // Por ahora sin paginación
+
+      // 🐛 DEBUG: Log para verificar filtros
+      console.log('🔍 Fetching guests with applied filters:', {
+        search: appliedFilters.search,
+        status: appliedFilters.status,
+        relation: appliedFilters.relation,
+        url: `/api/guests?${params.toString()}`
+      });
 
       const response = await fetch(`/api/guests?${params.toString()}`);
       const result: GuestsResponse = await response.json();
 
       if (result.success) {
+        console.log('✅ Guests fetched successfully:', {
+          totalFound: result.data.guests.length,
+          appliedFilters: { search: appliedFilters.search, status: appliedFilters.status, relation: appliedFilters.relation }
+        });
         setGuests(result.data.guests);
       } else {
         setError(result.error || 'Error al cargar invitados');
@@ -44,7 +64,7 @@ export const useGuests = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [appliedFilters]); // ✅ Dependencia cambiada a appliedFilters
 
   // Función para crear invitado
   const createGuest = async (guestData: GuestFormData): Promise<Guest | null> => {
@@ -128,9 +148,28 @@ export const useGuests = () => {
     }
   };
 
-  // Función para actualizar filtros
-  const updateFilters = (newFilters: Partial<GuestFilters>) => {
-    setFilters(prev => ({ ...prev, ...newFilters }));
+  // 🔄 Función para actualizar filtros temporales (UI)
+  const updateTempFilters = (newFilters: Partial<GuestFilters>) => {
+    console.log('🔄 Updating temp filters:', { 
+      previous: tempFilters, 
+      new: newFilters, 
+      merged: { ...tempFilters, ...newFilters } 
+    });
+    setTempFilters(prev => ({ ...prev, ...newFilters }));
+  };
+
+  // 🔄 Función para aplicar filtros (ejecutar la búsqueda)
+  const applyFilters = () => {
+    console.log('🚀 Applying filters:', tempFilters);
+    setAppliedFilters(tempFilters);
+  };
+
+  // 🔄 Función para limpiar filtros
+  const clearFilters = () => {
+    console.log('🧹 Clearing filters');
+    const emptyFilters = { search: '', status: 'all' as const, relation: 'all' as const };
+    setTempFilters(emptyFilters);
+    setAppliedFilters(emptyFilters);
   };
 
   // Función para limpiar errores
@@ -143,6 +182,14 @@ export const useGuests = () => {
     fetchGuests();
   };
 
+  // ✅ NUEVO: useEffect para ejecutar fetchGuests cuando appliedFilters cambian
+  useEffect(() => {
+    // Solo ejecutar si hay filtros aplicados
+    if (appliedFilters.search.trim() || appliedFilters.status !== 'all' || appliedFilters.relation !== 'all' || guests.length > 0) {
+      fetchGuests();
+    }
+  }, [fetchGuests, appliedFilters.search, appliedFilters.status, appliedFilters.relation]);
+
   // ❌ CARGA AUTOMÁTICA ELIMINADA
   // Ya no cargamos datos automáticamente al montar el componente
   // El usuario decide cuándo cargar con el botón manual
@@ -152,7 +199,8 @@ export const useGuests = () => {
     guests,
     loading,
     error,
-    filters,
+    tempFilters,        // ✅ Filtros temporales (UI)
+    appliedFilters,     // ✅ Filtros aplicados (API)
     
     // Funciones CRUD
     createGuest,
@@ -160,7 +208,9 @@ export const useGuests = () => {
     deleteGuest,
     
     // Funciones de control
-    updateFilters,
+    updateTempFilters,  // ✅ Para actualizar filtros en UI
+    applyFilters,       // ✅ Para ejecutar la búsqueda
+    clearFilters,       // ✅ Para limpiar filtros
     clearError,
     refresh,
     
@@ -169,5 +219,8 @@ export const useGuests = () => {
     totalGuests: guests.length,
     confirmedGuests: guests.filter(g => g.attendance?.confirmed).length,
     pendingGuests: guests.filter(g => g.status === 'pending').length,
+    
+    // ✅ Helper para saber si hay filtros pendientes de aplicar
+    hasUnappliedChanges: JSON.stringify(tempFilters) !== JSON.stringify(appliedFilters),
   };
 };

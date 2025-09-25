@@ -1,17 +1,26 @@
 import React from "react";
 import { Users, UserCheck, Clock, Percent } from "lucide-react";
-import { useGuestStats } from "../hooks/useGuestStats";
 
-const StatsCards: React.FC = () => {
-  const {
-    totalGuests,
-    totalConfirmed,
-    totalPending,
-    confirmationRate,
-    totalGuestCount,
-    loading,
-    error,
-  } = useGuestStats();
+// ✅ Interface para props que recibe desde el componente padre
+interface StatsCardsProps {
+  totalGuests: number;
+  totalConfirmed: number;
+  totalPending: number;
+  confirmationRate: number;
+  totalGuestCount: number;
+  loading: boolean;
+  error: string | null;
+}
+
+const StatsCards: React.FC<StatsCardsProps> = ({
+  totalGuests,
+  totalConfirmed,
+  totalPending,
+  confirmationRate,
+  totalGuestCount,
+  loading,
+  error
+}) => {
 
   if (loading) {
     return (

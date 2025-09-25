@@ -15,6 +15,15 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     
+    // 🐛 DEBUG: Log parámetros recibidos
+    console.log('🔍 API /guests GET - Filters received:', {
+      search: search,
+      status: status,
+      relation: relation,
+      page: page,
+      limit: limit
+    });
+    
     // Construir query de MongoDB con tipo específico
     const filterQuery: Record<string, unknown> = {};
     
@@ -32,6 +41,9 @@ export async function GET(request: NextRequest) {
     if (relation && relation !== 'all') {
       filterQuery.relation = relation;
     }
+    
+    // 🐛 DEBUG: Log query de MongoDB construida
+    console.log('🗃️ MongoDB query constructed:', filterQuery);
     
     // Calcular paginación
     const skip = (page - 1) * limit;
@@ -51,6 +63,13 @@ export async function GET(request: NextRequest) {
     const hasNext = page < totalPages;
     const hasPrev = page > 1;
     
+    // 🐛 DEBUG: Log resultados
+    console.log('✅ Query executed successfully:', {
+      totalFound: total,
+      returnedCount: guests.length,
+      filterQuery: filterQuery
+    });
+
     return NextResponse.json({
       success: true,
       data: {
