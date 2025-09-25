@@ -152,7 +152,7 @@ export default function CeremonySection() {
                     Recepción
                   </div>
                   <h4 className={isVisible ? completeClass : basicClass}>
-                    Paseo Real Casino 480
+                    Paseo Casino Real
                   </h4>
                   <div className="flex items-center justify-center gap-2">
                     <Clock className="w-6 h-6 text-primary" />
@@ -161,7 +161,7 @@ export default function CeremonySection() {
                     </span>
                   </div>
                   <p className="text-muted-foreground">
-                    Col Ex Hacienda los Ángeles
+                    José Vasconcelos 480 Col Ex hacienda Los ángeles
                   </p>
 
                   <Button
