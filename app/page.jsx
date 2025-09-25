@@ -20,6 +20,7 @@ import WelcomeMessage from "../components/sections/InvitationWelcome"
 import { PremiumGallery } from "@/components/sections/PremiumGallery"
 import CustomInvitations from "@/components/sections/CustomInvitations/components/CustomInvitations"
 import AttendanceConfirmation from "@/components/sections/AttendanceConfirmation"
+import { QRCode } from "@/components/sections/QRCode"
 
 export default function WeddingInvitation() {
   const [isOpenInvitation, setIsOpenInvitation] = useState(false);
@@ -65,6 +66,7 @@ export default function WeddingInvitation() {
       <GiftsSection />
       {/* <GallerySection /> */}
       <PremiumGallery />
+      <QRCode />
       <CustomInvitations />
       <BasicCTA />
       

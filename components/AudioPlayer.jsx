@@ -8,14 +8,7 @@ import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useAutoPlayOnInteraction } from "@/hooks/useAutoPlayOnInteraction";
 import { weddingData } from "@/data/weddingData";
 
-/**
- * Componente de reproductor de audio con posición fija
- * Características:
- * - Posición fija en bottom-right
- * - Botón circular con animaciones sutiles
- * - Control de play/pause únicamente
- * - Diseño responsivo
- */
+
 function AudioPlayer() {
   const { isPlaying, isLoading, error, toggle, restart, progress } =
     useAudioPlayer(weddingData.audio);
