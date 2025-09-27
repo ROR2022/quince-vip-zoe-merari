@@ -104,58 +104,119 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, phone, relation, personalInvitation, attendance } = body;
     
-    // Validaciones básicas
+    // Validaciones básicas mejoradas
     if (!name || !name.trim()) {
+      console.error('❌ API Error: Nombre vacío');
       return NextResponse.json(
         { 
           success: false, 
-          error: 'El nombre es obligatorio' 
+          error: 'El nombre es obligatorio',
+          errorCode: 'MISSING_NAME'
+        },
+        { status: 400 }
+      );
+    }
+    
+    // ⚠️ NUEVA VALIDACIÓN: Teléfono es OBLIGATORIO para invitaciones personalizadas
+    if (!phone || !phone.trim()) {
+      console.error('❌ API Error: Teléfono vacío');
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'El número de teléfono es obligatorio para invitaciones personalizadas',
+          errorCode: 'MISSING_PHONE' 
+        },
+        { status: 400 }
+      );
+    }
+    
+    // Normalizar teléfono (solo números)
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    // Validar formato de teléfono (exactamente 10 dígitos)
+    if (cleanPhone.length !== 10) {
+      console.error('❌ API Error: Teléfono inválido', { phone, cleanPhone, length: cleanPhone.length });
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'El número de teléfono debe tener exactamente 10 dígitos',
+          errorCode: 'INVALID_PHONE_FORMAT'
         },
         { status: 400 }
       );
     }
     
     if (!relation) {
+      console.error('❌ API Error: Relación vacía');
       return NextResponse.json(
         { 
           success: false, 
-          error: 'La relación es obligatoria' 
+          error: 'La relación es obligatoria',
+          errorCode: 'MISSING_RELATION' 
         },
         { status: 400 }
       );
     }
     
-    // Verificar si ya existe un invitado con el mismo nombre
+    console.log('📋 API: Validando duplicados con nueva lógica...', {
+      name: name.trim(),
+      cleanPhone: cleanPhone,
+      originalPhone: phone
+    });
+    
+    // 🔍 NUEVA LÓGICA: Verificar duplicado por NOMBRE + TELÉFONO (normalizado)
     const existingGuest = await Guest.findOne({ 
-      name: { $regex: `^${name.trim()}$`, $options: 'i' } 
+      name: { $regex: `^${name.trim()}$`, $options: 'i' },
+      phone: cleanPhone  // Buscar por teléfono normalizado
     });
     
     if (existingGuest) {
+      console.warn('⚠️ API: Duplicado encontrado', {
+        existingName: existingGuest.name,
+        existingPhone: existingGuest.phone,
+        newName: name.trim(),
+        newPhone: cleanPhone
+      });
+      
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Ya existe un invitado con ese nombre' 
+          error: 'Ya existe un invitado con ese nombre y número de teléfono',
+          errorCode: 'DUPLICATE_NAME_PHONE',
+          details: {
+            existingGuest: {
+              name: existingGuest.name,
+              phone: existingGuest.phone,
+              createdAt: existingGuest.createdAt
+            }
+          }
         },
         { status: 400 }
       );
     }
     
-    // Crear nuevo invitado
+    console.log('✅ API: No se encontraron duplicados, creando invitado...');
+    
+    // Crear nuevo invitado con teléfono normalizado
     const guestData: {
       name: string;
       relation: string;
-      phone?: string;
+      phone: string;  // Ahora siempre presente y normalizado
       personalInvitation?: unknown;
       attendance?: unknown;
     } = {
       name: name.trim(),
-      relation
+      relation,
+      phone: cleanPhone  // Guardar teléfono normalizado (solo números)
     };
     
-    // Agregar teléfono si se proporciona
-    if (phone && phone.trim()) {
-      guestData.phone = phone.trim();
-    }
+    console.log('💾 API: Preparando datos del invitado', {
+      name: guestData.name,
+      phone: guestData.phone,
+      relation: guestData.relation,
+      hasPersonalInvitation: !!personalInvitation,
+      hasAttendance: !!attendance
+    });
     
     // Agregar datos de invitación personalizada si se proporcionan
     if (personalInvitation) {

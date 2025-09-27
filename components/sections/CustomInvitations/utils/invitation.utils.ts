@@ -4,6 +4,7 @@
 
 import { FormData, ValidationResult } from '../types/invitation.types';
 import { EVENT_INFO, VALIDATION_MESSAGES, PHONE_CONFIG } from '../constants/invitation.constants';
+import "../../../../utils/logInterceptor";
 
 /**
  * Formatea un número de teléfono mexicano con espacios
@@ -47,9 +48,24 @@ export const formatMexicanPhone = (value: string, previousValue?: string): strin
  * @returns Mensaje formateado para WhatsApp
  */
 export const generateWhatsAppMessage = (formData: FormData): string => {
+  console.log('📝 [MESSAGE] Generando mensaje de WhatsApp...');
+  console.log('📋 [MESSAGE] Datos recibidos:', {
+    guestName: formData.guestName,
+    personalMessage: formData.personalMessage,
+    personalMessageLength: formData.personalMessage?.length,
+    numberOfGuests: formData.numberOfGuests,
+    guestRelation: formData.guestRelation
+  });
+
   const guestText = parseInt(formData.numberOfGuests) === 1 ? 'persona' : 'personas';
   
-  return `👑 ¡Hola ${formData.guestName}! 👑
+  // Agregar timestamp para evitar cache de WhatsApp
+  const timestamp = new Date().toLocaleTimeString('es-MX', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+
+  const message = `👑 ¡Hola ${formData.guestName}! 👑
 
 ${formData.personalMessage}
 
@@ -67,32 +83,125 @@ Ver tu invitación mágica aquí:
 💜 ¡Espero que celebres con nosotros este día tan especial!
 
 Con cariño,
-${EVENT_INFO.quinceaneraName} 🎉`;
+${EVENT_INFO.quinceaneraName} 🎉
+
+📤 Enviado: ${timestamp}`;
+
+  console.log('📝 [MESSAGE] Mensaje generado (primeros 200 chars):', message.substring(0, 200) + '...');
+  console.log('📊 [MESSAGE] Estadísticas del mensaje:', {
+    messageLength: message.length,
+    includesPersonalMessage: message.includes(formData.personalMessage),
+    includesGuestName: message.includes(formData.guestName),
+    personalMessageStart: message.indexOf(formData.personalMessage),
+    personalMessageEnd: message.indexOf(formData.personalMessage) + formData.personalMessage.length,
+    includesTimestamp: message.includes(timestamp),
+    originalPersonalMessage: formData.personalMessage
+  });
+
+  // Verificación adicional de integridad del mensaje
+  if (!message.includes(formData.personalMessage)) {
+    console.error('🚨 [MESSAGE] ¡CRÍTICO! El mensaje personal no está incluido en el mensaje final');
+    console.error('🔍 [MESSAGE] Mensaje personal original:', formData.personalMessage);
+    console.error('🔍 [MESSAGE] Mensaje final:', message);
+  } else {
+    console.log('✅ [MESSAGE] Verificación exitosa: Mensaje personal incluido correctamente');
+  }
+
+  return message;
 };
 
 /**
- * Valida todos los campos del formulario
+ * Valida todos los campos del formulario con validaciones estrictas
  * @param formData - Datos del formulario a validar
- * @returns Resultado de la validación
+ * @returns Resultado de la validación con código de error específico
  */
-export const validateForm = (formData: FormData): ValidationResult => {
-  // Verificar campos requeridos
-  if (!formData.guestName || !formData.whatsappNumber || !formData.numberOfGuests || !formData.personalMessage) {
+export const validateForm = (formData: FormData): ValidationResult & { errorCode?: string } => {
+  console.log('🔍 [VALIDATION] Iniciando validación estricta del formulario...');
+  
+  // 1. Verificar nombre
+  if (!formData.guestName || !formData.guestName.trim()) {
+    console.error('❌ [VALIDATION] Nombre vacío');
     return { 
       isValid: false, 
-      message: VALIDATION_MESSAGES.REQUIRED_FIELDS 
+      message: 'El nombre del invitado es obligatorio',
+      errorCode: 'MISSING_NAME'
     };
   }
   
-  // Validar número de teléfono
+  if (formData.guestName.trim().length < 2) {
+    console.error('❌ [VALIDATION] Nombre muy corto');
+    return { 
+      isValid: false, 
+      message: 'El nombre debe tener al menos 2 caracteres',
+      errorCode: 'INVALID_NAME_LENGTH'
+    };
+  }
+  
+  // 2. Verificar teléfono (OBLIGATORIO)
+  if (!formData.whatsappNumber || !formData.whatsappNumber.trim()) {
+    console.error('❌ [VALIDATION] Teléfono vacío');
+    return { 
+      isValid: false, 
+      message: 'El número de teléfono es obligatorio',
+      errorCode: 'MISSING_PHONE'
+    };
+  }
+  
+  // Validar formato de teléfono (exactamente 10 dígitos)
   const cleanNumber = formData.whatsappNumber.replace(/\D/g, "");
   if (cleanNumber.length !== PHONE_CONFIG.DIGITS_REQUIRED) {
+    console.error('❌ [VALIDATION] Teléfono inválido', { 
+      original: formData.whatsappNumber,
+      clean: cleanNumber,
+      length: cleanNumber.length 
+    });
     return { 
       isValid: false, 
-      message: VALIDATION_MESSAGES.INVALID_PHONE 
+      message: `El número debe tener exactamente ${PHONE_CONFIG.DIGITS_REQUIRED} dígitos`,
+      errorCode: 'INVALID_PHONE_FORMAT'
     };
   }
   
+  // 3. Verificar número de invitados
+  if (!formData.numberOfGuests || !formData.numberOfGuests.trim()) {
+    console.error('❌ [VALIDATION] Número de invitados vacío');
+    return { 
+      isValid: false, 
+      message: 'El número de invitados es obligatorio',
+      errorCode: 'MISSING_GUEST_COUNT'
+    };
+  }
+  
+  const guestCount = parseInt(formData.numberOfGuests);
+  if (isNaN(guestCount) || guestCount < 1 || guestCount > 10) {
+    console.error('❌ [VALIDATION] Número de invitados inválido');
+    return { 
+      isValid: false, 
+      message: 'El número de invitados debe ser entre 1 y 10',
+      errorCode: 'INVALID_GUEST_COUNT'
+    };
+  }
+  
+  // 4. Verificar mensaje personalizado
+  if (!formData.personalMessage || !formData.personalMessage.trim()) {
+    console.error('❌ [VALIDATION] Mensaje personal vacío');
+    return { 
+      isValid: false, 
+      message: 'El mensaje personalizado es obligatorio',
+      errorCode: 'MISSING_MESSAGE'
+    };
+  }
+  
+  if (formData.personalMessage.trim().length < 10) {
+    console.error('❌ [VALIDATION] Mensaje personal muy corto');
+    return { 
+      isValid: false, 
+      message: 'El mensaje debe tener al menos 10 caracteres',
+      errorCode: 'INVALID_MESSAGE_LENGTH'
+    };
+  }
+  
+  console.log('✅ [VALIDATION] Validación exitosa');
   return { isValid: true };
 };
 
@@ -236,6 +345,8 @@ export const validatePersonalMessage = (message: string): ValidationResult => {
  * @returns Promise<boolean> - true si fue exitoso
  */
 export const createOrUpdateGuestFromInvitation = async (formData: FormData): Promise<boolean> => {
+  console.log('🗄️ [BD] Iniciando registro de invitado en base de datos...');
+  
   try {
     // Mapear guestRelation a los valores válidos del modelo
     const relationMap: Record<string, string> = {
@@ -248,11 +359,14 @@ export const createOrUpdateGuestFromInvitation = async (formData: FormData): Pro
       'familiar': 'familia'
     };
 
+    const cleanPhone = formData.whatsappNumber.replace(/\D/g, '');
+    const mappedRelation = relationMap[formData.guestRelation.toLowerCase()] || 'otros';
+
     // Preparar datos del invitado según esquema de GuestsManagement
     const guestData = {
       name: formData.guestName.trim(),
-      phone: formData.whatsappNumber.replace(/\D/g, ''), // Solo números
-      relation: relationMap[formData.guestRelation.toLowerCase()] || 'otros',
+      phone: cleanPhone, // Solo números
+      relation: mappedRelation,
       personalInvitation: {
         sent: true,
         sentAt: new Date(),
@@ -261,7 +375,17 @@ export const createOrUpdateGuestFromInvitation = async (formData: FormData): Pro
       }
     };
 
-    console.log('📤 Enviando datos de invitado:', guestData);
+    console.log('� [BD] Datos preparados para BD:', {
+      name: guestData.name,
+      phone: guestData.phone,
+      phoneLength: guestData.phone.length,
+      relation: guestData.relation,
+      originalRelation: formData.guestRelation,
+      numberOfGuests: guestData.personalInvitation.numberOfGuests,
+      messageLength: guestData.personalInvitation.message.length
+    });
+
+    console.log('📤 [BD] Enviando petición POST a /api/guests...');
 
     // Intentar crear o actualizar el invitado
     const response = await fetch('/api/guests', {
@@ -272,20 +396,78 @@ export const createOrUpdateGuestFromInvitation = async (formData: FormData): Pro
       body: JSON.stringify(guestData),
     });
 
-    const result = await response.json();
+    console.log('📥 [BD] Respuesta recibida:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+
+    // Parsear respuesta siempre (tanto exitosa como error)
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      console.error('💥 [BD] Error parseando respuesta JSON:', parseError);
+      throw new Error('Error de comunicación con el servidor');
+    }
+    
+    console.log('📋 [BD] Resultado parseado:', {
+      success: result.success,
+      hasData: !!result.data,
+      error: result.error,
+      errorCode: result.errorCode,
+      dataName: result.data?.name
+    });
+
+    if (!response.ok) {
+      console.error('❌ [BD] Response no OK:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: result.error,
+        errorCode: result.errorCode
+      });
+      
+      // Crear un error estructurado que incluya la información de la API
+      const apiError = new Error(result.error || 'Error desconocido');
+      (apiError as any).response = {
+        status: response.status,
+        statusText: response.statusText,
+        json: () => Promise.resolve(result)
+      };
+      (apiError as any).apiError = result;
+      throw apiError;
+    }
 
     if (result.success) {
-      console.log('✅ Invitado registrado automáticamente:', result.data.name);
+      console.log('✅ [BD] Invitado registrado automáticamente:', result.data.name);
       return true;
     } else {
-      console.error('❌ Error al registrar invitado:', result.error);
-      // No bloqueamos el envío de WhatsApp por errores de BD
-      return false;
+      console.error('❌ [BD] Error al registrar invitado sin response error:', result.error);
+      
+      // Si la respuesta es OK pero success es false, también lanzar error
+      const apiError = new Error(result.error || 'Error en el proceso de registro');
+      (apiError as any).apiError = result;
+      throw apiError;
     }
   } catch (error) {
-    console.error('❌ Error de conexión al registrar invitado:', error);
-    // No bloqueamos el envío de WhatsApp por errores de conexión
-    return false;
+    console.error('💥 [BD] Error de conexión al registrar invitado:', error);
+    console.error('🔍 [BD] Detalles del error de conexión:', {
+      name: (error as Error)?.name,
+      message: (error as Error)?.message,
+      stack: (error as Error)?.stack
+    });
+
+    // Si ya es un error de API estructurado, re-lanzarlo
+    if ((error as any).apiError || (error as any).response) {
+      throw error;
+    }
+
+    // Si es un error de conexión/red, crear error estructurado
+    const connectionError = new Error('Error de conexión con el servidor');
+    (connectionError as any).connectionError = true;
+    (connectionError as any).originalError = error;
+    throw connectionError;
   }
 };
 
@@ -295,29 +477,151 @@ export const createOrUpdateGuestFromInvitation = async (formData: FormData): Pro
  * @returns Promise<boolean> - true si el envío fue exitoso
  */
 export const sendWhatsAppInvitationWithRegistration = async (formData: FormData): Promise<boolean> => {
+  console.log('🔄 [MAIN] Iniciando sendWhatsAppInvitationWithRegistration...');
+  console.log('📋 [MAIN] FormData recibido completo:', {
+    guestName: formData.guestName,
+    personalMessage: formData.personalMessage,
+    personalMessagePreview: formData.personalMessage ? formData.personalMessage.substring(0, 50) + '...' : 'VACÍO',
+    numberOfGuests: formData.numberOfGuests,
+    whatsappNumber: formData.whatsappNumber,
+    guestRelation: formData.guestRelation,
+    allFieldsPresent: !!(formData.guestName && formData.personalMessage && formData.numberOfGuests && formData.whatsappNumber)
+  });
+  
   const validation = validateForm(formData);
   if (!validation.isValid) {
-    
-    console.error('❌ Validación fallida:', validation.message);
+    console.error('❌ [MAIN] Validación fallida:', validation.message);
+    console.error('📋 [MAIN] Datos de validación:', {
+      guestName: formData.guestName || 'VACÍO',
+      personalMessage: formData.personalMessage || 'VACÍO',
+      numberOfGuests: formData.numberOfGuests || 'VACÍO',
+      whatsappNumber: formData.whatsappNumber || 'VACÍO',
+      phoneClean: formData.whatsappNumber?.replace(/\D/g, "") || 'VACÍO',
+      phoneLength: formData.whatsappNumber?.replace(/\D/g, "").length || 0
+    });
     return false;
   }
   
+  console.log('✅ [MAIN] Validación exitosa, procediendo...');
+  
   try {
-    // 1. Registrar invitado en la base de datos (automático, no bloquea)
-    await createOrUpdateGuestFromInvitation(formData);
+    // 1. Registrar invitado en la base de datos (obligatorio ahora)
+    console.log('📤 [MAIN] Intentando registrar invitado en BD...');
+    const dbResult = await createOrUpdateGuestFromInvitation(formData);
+    
+    if (dbResult) {
+      console.log('✅ [MAIN] Invitado registrado en BD exitosamente');
+    }
+    
+    // Si llegamos aquí, el registro fue exitoso, continuar con WhatsApp
+    console.log('📱 [MAIN] Procediendo con envío de WhatsApp...');
     
     // 2. Generar mensaje y enviar por WhatsApp
+    console.log('📱 [WHATSAPP] Generando mensaje y URL de WhatsApp...');
     const message = generateWhatsAppMessage(formData);
     const cleanNumber = formData.whatsappNumber.replace(/\D/g, "");
-    const mexicanNumber = `521${cleanNumber}`;
-    const whatsappURL = `https://wa.me/${mexicanNumber}?text=${encodeURIComponent(message)}`;
+    const mexicanNumber = `521${cleanNumber}`; // Corregido: usar 521 para WhatsApp
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappURL = `https://wa.me/${mexicanNumber}?text=${encodedMessage}`;
     
-    // 3. Abrir WhatsApp
-    window.open(whatsappURL, "_blank");
+    console.log('📋 [WHATSAPP] Detalles del mensaje:', {
+      cleanNumber: cleanNumber,
+      mexicanNumber: mexicanNumber,
+      messageLength: message.length,
+      encodedLength: encodedMessage.length,
+      urlLength: whatsappURL.length,
+      urlTruncated: whatsappURL.length > 8000 ? 'URL MUY LARGA' : 'OK'
+    });
+    
+    console.log('� [WHATSAPP] Mensaje sin codificar (primeros 300 chars):', message.substring(0, 300) + '...');
+    console.log('🔗 [WHATSAPP] Mensaje codificado (primeros 300 chars):', encodedMessage.substring(0, 300) + '...');
+    console.log('🌐 [WHATSAPP] URL generada (primeros 200 chars):', whatsappURL.substring(0, 200) + '...');
+    
+    // 3. Verificar si el navegador permite popup
+    console.log('🔓 [Utils] Verificando si se pueden abrir popups...');
+    
+    // 4. Abrir WhatsApp
+    console.log('🚀 [WHATSAPP] Abriendo WhatsApp...');
+    
+    let newWindow: Window | null = null;
+    
+    // Verificar si la URL es muy larga para WhatsApp
+    if (whatsappURL.length > 8192) { // Límite típico de URL en navegadores
+      console.warn('⚠️ [WHATSAPP] URL muy larga, podría ser truncada:', whatsappURL.length + ' caracteres');
+      
+      // Crear versión más corta del mensaje (priorizando el mensaje personal)
+      const shortMessage = `👑 ${formData.guestName} 👑
+
+${formData.personalMessage}
+
+🎉 Quinceañera de ${EVENT_INFO.quinceaneraName}
+📅 ${EVENT_INFO.date} - ${EVENT_INFO.time}
+📍 ${EVENT_INFO.venue}
+👥 ${formData.numberOfGuests} ${parseInt(formData.numberOfGuests) === 1 ? 'persona' : 'personas'}
+
+👉 Ver invitación: ${EVENT_INFO.invitationUrl}
+
+Con cariño 💜`;
+
+      const shortEncodedMessage = encodeURIComponent(shortMessage);
+      const shortWhatsappURL = `https://wa.me/${mexicanNumber}?text=${shortEncodedMessage}`;
+      
+      console.log('📝 [WHATSAPP] Usando mensaje corto (PRIORIZA MENSAJE PERSONAL):', {
+        shortMessageLength: shortMessage.length,
+        shortEncodedLength: shortEncodedMessage.length,
+        shortUrlLength: shortWhatsappURL.length,
+        includesPersonalMessage: shortMessage.includes(formData.personalMessage)
+      });
+      
+      console.log('✨ [WHATSAPP] Mensaje corto generado:', shortMessage);
+      
+      newWindow = window.open(shortWhatsappURL, "_blank");
+    } else {
+      newWindow = window.open(whatsappURL, "_blank");
+    }
+    
+    // 5. Verificar si el popup fue bloqueado
+    if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+      console.error('🚫 [WHATSAPP] Popup bloqueado por el navegador');
+      console.warn('⚠️ [WHATSAPP] Intentando alternativa - cambiar ubicación actual');
+      
+      // Alternativa: usar location.href como fallback
+      const urlToUse = whatsappURL.length > 8192 ? 
+        `https://wa.me/${mexicanNumber}?text=${encodeURIComponent(`👑 Hola ${formData.guestName}! ${formData.personalMessage} Ver invitación: ${EVENT_INFO.invitationUrl}`)}` : 
+        whatsappURL;
+        
+      if (confirm('El popup fue bloqueado. ¿Quieres abrir WhatsApp en esta pestaña?')) {
+        window.location.href = urlToUse;
+      }
+      return false;
+    }
+    
+    console.log('✅ [WHATSAPP] WhatsApp abierto exitosamente');
+    
+    // 6. Verificar que la ventana sigue abierta después de un momento
+    setTimeout(() => {
+      if (newWindow && !newWindow.closed) {
+        console.log('✅ [WHATSAPP] Confirmado: WhatsApp sigue abierto después de 1 segundo');
+      } else {
+        console.warn('⚠️ [WHATSAPP] La ventana de WhatsApp se cerró rápidamente');
+      }
+    }, 1000);
     
     return true;
-  } catch (error) {
-    console.error('❌ Error en el envío de invitación:', error);
+  } catch (error: any) {
+    console.error('❌ [MAIN] Error en el proceso:', error);
+    
+    // Si es un error de BD, marcarlo para manejo especial en el componente
+    if (error.apiError || error.connectionError || error.response) {
+      console.error('� [MAIN] Error de BD detectado, será manejado por modal');
+      (error as any).isBdError = true;
+      throw error;
+    }
+    
+    // Error genérico de WhatsApp o proceso
+    console.error('� [MAIN] Error crítico general:', error);
+    console.error('🔍 [MAIN] Stack trace:', (error as Error)?.stack);
+    
     return false;
   }
 };
