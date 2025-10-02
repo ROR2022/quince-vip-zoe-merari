@@ -1,7 +1,7 @@
 "use client"
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users, UserPlus, RefreshCw, Heart, Sparkles, Grid3X3, Table2 } from 'lucide-react';
+import { Users, UserPlus, RefreshCw, Heart, Sparkles, Grid3X3, Table2, ChevronDown, MoreHorizontal } from 'lucide-react';
 import { useGuests } from './hooks/useGuests';
 import { useGuestStats } from './hooks/useGuestStats';
 import { Guest, GuestFormData } from './types/guests.types';
@@ -34,7 +34,14 @@ const GuestsManagement = () => {
     clearError,
     createGuest,
     updateGuest,
-    deleteGuest
+    deleteGuest,
+    // 🚀 NUEVOS: Estados y funciones Load More
+    currentPage,
+    hasMoreGuests,
+    loadingMore,
+    totalGuests,
+    loadedGuests,
+    loadMoreGuests
   } = useGuests();
 
   // Hook para estadísticas
@@ -100,8 +107,9 @@ const GuestsManagement = () => {
   // ❌ REMOVIDO: useEffect que causaba loop infinito
   // Las estadísticas se actualizan manualmente en las funciones específicas
  
-  // Determinar si está cargando (cualquiera de los dos)
+  // 🚀 MEJORADO: Determinar estados de loading (principal vs Load More)
   const isLoading = loading || statsLoading;
+  const isLoadingAny = isLoading || loadingMore;
 
   const handleViewGuest = (guest: Guest) => {
     setSelectedGuest(guest);
@@ -124,10 +132,14 @@ const GuestsManagement = () => {
     setShowAddForm(true);
   };
 
-  // Handlers para los modales
+  // Handlers para los modales con actualización de estadísticas
   const handleAddSubmit = async (data: GuestFormData): Promise<boolean> => {
     try {
       const result = await createGuest(data);
+      // 🚀 NUEVO: Actualizar estadísticas después de crear invitado
+      if (result !== null) {
+        refreshStats(appliedFilters);
+      }
       return result !== null;
     } catch (error) {
       console.error('Error al agregar invitado:', error);
@@ -138,6 +150,10 @@ const GuestsManagement = () => {
   const handleEditSubmit = async (id: string, data: Partial<GuestFormData>): Promise<boolean> => {
     try {
       const result = await updateGuest(id, data);
+      // 🚀 NUEVO: Actualizar estadísticas después de editar invitado
+      if (result !== null) {
+        refreshStats(appliedFilters);
+      }
       return result !== null;
     } catch (error) {
       console.error('Error al actualizar invitado:', error);
@@ -147,7 +163,12 @@ const GuestsManagement = () => {
 
   const handleDeleteConfirm = async (id: string): Promise<boolean> => {
     try {
-      return await deleteGuest(id);
+      const result = await deleteGuest(id);
+      // 🚀 NUEVO: Actualizar estadísticas después de eliminar invitado
+      if (result) {
+        refreshStats(appliedFilters);
+      }
+      return result;
     } catch (error) {
       console.error('Error al eliminar invitado:', error);
       return false;
@@ -324,6 +345,67 @@ const GuestsManagement = () => {
           </div>
         </div>
 
+{/* 🚀 NUEVA SECCIÓN: Load More y Progress Indicators */}
+          {guests.length > 0 && (
+            <div className="mt-8 space-y-4">
+              {/* Load More Button */}
+              {hasMoreGuests && !loading && (
+                <div className="text-center">
+                  <button
+                    onClick={loadMoreGuests}
+                    disabled={loadingMore}
+                    className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl border-2 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:transform-none shadow-lg"
+                    style={{
+                      background: loadingMore 
+                        ? 'rgba(230, 217, 255, 0.2)' 
+                        : 'linear-gradient(135deg, var(--color-aurora-lavanda), var(--color-aurora-rosa))',
+                      borderColor: 'var(--color-aurora-lavanda)',
+                      color: loadingMore ? 'var(--color-aurora-lavanda)' : 'white'
+                    }}
+                  >
+                    {loadingMore ? (
+                      <>
+                        <MoreHorizontal className="w-5 h-5 animate-pulse" />
+                        <span className="text-lg font-semibold">Cargando más invitados...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-5 h-5" />
+                        <span className="text-lg font-semibold text-black">
+                          Ver más invitados ({totalGuests - loadedGuests} restantes)
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Progress Indicator */}
+              <div className="text-center">
+                <p className="text-sm font-medium" style={{ color: 'var(--color-aurora-lavanda)' }}>
+                  Mostrando {loadedGuests} de {totalGuests} invitados
+                  {appliedFilters.search || appliedFilters.status !== 'all' || appliedFilters.relation !== 'all' 
+                    ? ' (filtrados)' 
+                    : ''
+                  }
+                </p>
+                
+                {/* Progress Bar */}
+                <div 
+                  className="w-full max-w-md mx-auto mt-2 h-2 rounded-full overflow-hidden"
+                  style={{ backgroundColor: 'rgba(230, 217, 255, 0.3)' }}
+                >
+                  <div 
+                    className="h-full transition-all duration-500 rounded-full"
+                    style={{
+                      width: `${totalGuests > 0 ? (loadedGuests / totalGuests) * 100 : 0}%`,
+                      background: 'linear-gradient(90deg, var(--color-aurora-lavanda), var(--color-aurora-rosa))'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         {/* Lista de invitados */}
         <div className="space-y-6">
           {loading && guests.length === 0 ? (
@@ -406,6 +488,68 @@ const GuestsManagement = () => {
                   <span className="text-lg font-semibold text-black">Agregar Primer Invitado</span>
                 </button>
               )}
+            </div>
+          )}
+
+          {/* 🚀 NUEVA SECCIÓN: Load More y Progress Indicators */}
+          {guests.length > 0 && (
+            <div className="mt-8 space-y-4">
+              {/* Load More Button */}
+              {hasMoreGuests && !loading && (
+                <div className="text-center">
+                  <button
+                    onClick={loadMoreGuests}
+                    disabled={loadingMore}
+                    className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl border-2 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:transform-none shadow-lg"
+                    style={{
+                      background: loadingMore 
+                        ? 'rgba(230, 217, 255, 0.2)' 
+                        : 'linear-gradient(135deg, var(--color-aurora-lavanda), var(--color-aurora-rosa))',
+                      borderColor: 'var(--color-aurora-lavanda)',
+                      color: loadingMore ? 'var(--color-aurora-lavanda)' : 'white'
+                    }}
+                  >
+                    {loadingMore ? (
+                      <>
+                        <MoreHorizontal className="w-5 h-5 animate-pulse" />
+                        <span className="text-lg font-semibold">Cargando más invitados...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-5 h-5" />
+                        <span className="text-lg font-semibold text-black">
+                          Ver más invitados ({totalGuests - loadedGuests} restantes)
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Progress Indicator */}
+              <div className="text-center">
+                <p className="text-sm font-medium" style={{ color: 'var(--color-aurora-lavanda)' }}>
+                  Mostrando {loadedGuests} de {totalGuests} invitados
+                  {appliedFilters.search || appliedFilters.status !== 'all' || appliedFilters.relation !== 'all' 
+                    ? ' (filtrados)' 
+                    : ''
+                  }
+                </p>
+                
+                {/* Progress Bar */}
+                <div 
+                  className="w-full max-w-md mx-auto mt-2 h-2 rounded-full overflow-hidden"
+                  style={{ backgroundColor: 'rgba(230, 217, 255, 0.3)' }}
+                >
+                  <div 
+                    className="h-full transition-all duration-500 rounded-full"
+                    style={{
+                      width: `${totalGuests > 0 ? (loadedGuests / totalGuests) * 100 : 0}%`,
+                      background: 'linear-gradient(90deg, var(--color-aurora-lavanda), var(--color-aurora-rosa))'
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -13,15 +13,16 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const relation = searchParams.get('relation');
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = parseInt(searchParams.get('limit') || '20'); // ✅ OPTIMIZADO: Límite por defecto aumentado para Load More
     
-    // 🐛 DEBUG: Log parámetros recibidos
-    console.log('🔍 API /guests GET - Filters received:', {
+    // � DEBUG: Log parámetros recibidos para Load More
+    console.log('🔍 [Load More] API /guests GET - Filters received:', {
       search: search,
       status: status,
       relation: relation,
       page: page,
-      limit: limit
+      limit: limit,
+      timestamp: new Date().toISOString()
     });
     
     // Construir query de MongoDB con tipo específico
@@ -63,11 +64,16 @@ export async function GET(request: NextRequest) {
     const hasNext = page < totalPages;
     const hasPrev = page > 1;
     
-    // 🐛 DEBUG: Log resultados
-    console.log('✅ Query executed successfully:', {
+    // ✅ DEBUG: Log resultados para Load More
+    console.log('✅ [Load More] Query executed successfully:', {
       totalFound: total,
       returnedCount: guests.length,
-      filterQuery: filterQuery
+      currentPage: page,
+      totalPages: totalPages,
+      hasNext: hasNext,
+      hasPrev: hasPrev,
+      filterQuery: filterQuery,
+      timestamp: new Date().toISOString()
     });
 
     return NextResponse.json({

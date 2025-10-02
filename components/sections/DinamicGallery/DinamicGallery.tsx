@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Camera, Users, Calendar, RefreshCw, Filter, ChevronLeft, ChevronRight, Loader2, AlertCircle, Heart, Cloud, Server, Trash2, Image as ImageIcon, ArrowUp, Grid3X3, Play, Maximize2, Settings } from 'lucide-react';
+import { Camera, Users, Calendar, RefreshCw, Filter, ChevronLeft, ChevronRight, Loader2, AlertCircle, Heart, Cloud, Server, Trash2, Image as ImageIcon, ArrowUp, Grid3X3, Play, Maximize2, Settings, ChevronDown, Clock, Zap } from 'lucide-react';
 import { useHybridGallery } from './hooks/useHybridGallery';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import PhotoDetailModal from './PhotoDetailModal';
@@ -53,20 +53,35 @@ const VIP_COLORS = {
  */
 const DinamicGallery: React.FC = () => {
   const { 
+    // 📸 Estados principales
     photos, 
     loading, 
     error, 
     stats, 
     pagination, 
     filters, 
+    
+    // 🔧 Funciones básicas
     setFilters, 
     refresh,
     getPhotoDisplayUrl,
+    
     // 🗑️ Funciones de eliminación
     deletePhoto,
     isPhotoDeleting,
     deleteError,
-    clearDeleteError
+    clearDeleteError,
+    
+    // 🆕 Funciones Load More y refresh manual
+    loadMorePhotos,
+    loadingMore,
+    hasMorePhotos,
+    currentPage,
+    totalPhotos,
+    checkForNewPhotos,
+    softRefresh,
+    newPhotosAvailable,
+    lastRefreshTime
   } = useHybridGallery();
 
   const [selectedPhoto, setSelectedPhoto] = useState<HybridPhoto | null>(null);
@@ -93,6 +108,53 @@ const DinamicGallery: React.FC = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // 🆕 Función para tiempo relativo (ej: "Hace 5 min")
+  const getRelativeTime = (dateString: string) => {
+    const now = Date.now();
+    const photoTime = new Date(dateString).getTime();
+    const diffMinutes = Math.floor((now - photoTime) / (1000 * 60));
+    
+    if (diffMinutes < 1) return 'Hace un momento';
+    if (diffMinutes < 60) return `Hace ${diffMinutes} min`;
+    if (diffMinutes < 1440) return `Hace ${Math.floor(diffMinutes / 60)} h`;
+    if (diffMinutes < 10080) return `Hace ${Math.floor(diffMinutes / 1440)} días`;
+    
+    return formatDate(dateString);
+  };
+
+  // 🆕 Verificar si una foto es "nueva" (últimas 6 horas)
+  const isPhotoNew = (uploadedAt: string) => {
+    return Date.now() - new Date(uploadedAt).getTime() < 6 * 60 * 60 * 1000;
+  };
+
+  // 🆕 Contar fotos recientes (últimas 24 horas)
+  const getRecentPhotosCount = () => {
+    return photos.filter(photo => 
+      Date.now() - new Date(photo.uploadedAt).getTime() < 24 * 60 * 60 * 1000
+    ).length;
+  };
+
+  // 🆕 Handler para Load More
+  const handleLoadMore = async () => {
+    if (!loadingMore && hasMorePhotos) {
+      await loadMorePhotos();
+    }
+  };
+
+  // 🆕 Handler para refresh manual
+  const handleManualRefresh = async () => {
+    if (!loading) {
+      await refresh();
+    }
+  };
+
+  // 🆕 Handler para soft refresh (solo nuevas fotos)
+  const handleSoftRefresh = async () => {
+    if (!loading && !loadingMore) {
+      await softRefresh();
+    }
   };
 
   // 🗑️ Handlers para eliminación
@@ -232,13 +294,75 @@ const DinamicGallery: React.FC = () => {
           
         </div>
 
-        {/* Controles Simplificados */}
-        <div className="mb-8 flex justify-center">
+        {/* 🆕 Indicadores de Actividad Reciente */}
+        {photos.length > 0 && (
+          <div className="mb-8 text-center">
+            {/* Contador de fotos recientes */}
+            {getRecentPhotosCount() > 0 && (
+              <div className="mb-4">
+                <div 
+                  className="inline-flex items-center px-6 py-3 rounded-full vip-shimmer-aurora"
+                  style={{
+                    background: `linear-gradient(135deg, ${VIP_COLORS.oroAurora}, ${VIP_COLORS.oroIntensio})`,
+                    color: 'white'
+                  }}
+                >
+                  <Clock size={20} className="mr-2" />
+                  <span className="font-semibold">
+                    🔥 {getRecentPhotosCount()} foto{getRecentPhotosCount() > 1 ? 's' : ''} nueva{getRecentPhotosCount() > 1 ? 's' : ''} 
+                    en las últimas 24 horas
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Notificación de fotos nuevas disponibles */}
+            {newPhotosAvailable > 0 && (
+              <div className="mb-4">
+                <button
+                  onClick={handleSoftRefresh}
+                  disabled={loading || loadingMore}
+                  className="inline-flex items-center px-6 py-3 rounded-full shadow-lg vip-shimmer-aurora animate-pulse transition-all duration-300 hover:scale-105 disabled:opacity-50"
+                  style={{
+                    background: `linear-gradient(135deg, ${VIP_COLORS.rosaAurora}, ${VIP_COLORS.lavandaAurora})`,
+                    color: 'white'
+                  }}
+                >
+                  <Zap size={20} className="mr-2" />
+                  <span className="font-semibold">
+                    {newPhotosAvailable} nueva{newPhotosAvailable > 1 ? 's' : ''} foto{newPhotosAvailable > 1 ? 's' : ''} disponible{newPhotosAvailable > 1 ? 's' : ''}
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 🆕 Controles de Refresh y Load More */}
+        <div className="mb-8 flex flex-wrap justify-center gap-4">
+          {/* Botón de Refresh Manual */}
+          <button
+            onClick={handleManualRefresh}
+            disabled={loading}
+            className="flex items-center px-6 py-3 rounded-xl border-2 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              background: `linear-gradient(135deg, ${VIP_COLORS.rosaAurora}, ${VIP_COLORS.rosaIntensa})`,
+              borderColor: VIP_COLORS.oroAurora,
+              color: 'white'
+            }}
+          >
+            <RefreshCw size={20} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <span className="font-medium">
+              {loading ? 'Actualizando...' : 'Buscar fotos nuevas'}
+            </span>
+          </button>
+
+          {/* Botón de Controles */}
           <button
             onClick={() => setShowControlsModal(true)}
             className="flex items-center px-6 py-3 rounded-xl border-2 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
             style={{
-              background: `linear-gradient(135deg, ${VIP_COLORS.rosaAurora}, ${VIP_COLORS.rosaIntensa})`,
+              background: `linear-gradient(135deg, ${VIP_COLORS.lavandaAurora}, ${VIP_COLORS.lavandaIntensa})`,
               borderColor: VIP_COLORS.oroAurora,
               color: 'white'
             }}
@@ -246,7 +370,7 @@ const DinamicGallery: React.FC = () => {
             <Settings size={20} className="mr-3" />
             <span className="font-medium">Controles de Galería</span>
             <div className="ml-3 px-2 py-1 rounded-full bg-white/20 text-xs">
-              {photos.length} fotos
+              {photos.length} de {totalPhotos}
             </div>
           </button>
         </div>
@@ -422,8 +546,24 @@ const DinamicGallery: React.FC = () => {
                       loading="lazy"
                     />
                     
+                    {/* 🆕 Badge "NUEVO" para fotos recientes */}
+                    {isPhotoNew(photo.uploadedAt) && (
+                      <div className="absolute top-2 left-2 z-10">
+                        <span 
+                          className="px-2 py-1 text-xs font-bold rounded-full vip-pulse-aurora"
+                          style={{
+                            background: `linear-gradient(135deg, ${VIP_COLORS.oroAurora}, ${VIP_COLORS.oroIntensio})`,
+                            color: 'white',
+                            boxShadow: '0 2px 8px rgba(255, 152, 0, 0.3)'
+                          }}
+                        >
+                          NUEVO
+                        </span>
+                      </div>
+                    )}
+                    
                     {/* Indicador de fuente */}
-                    <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute top-2 right-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       {photo.source === 'cloudinary' ? (
                         <Cloud size={16} className="text-blue-500 bg-white rounded-full p-1" />
                       ) : (
@@ -458,22 +598,64 @@ const DinamicGallery: React.FC = () => {
                     {/* Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     
-                    {/* Info Overlay */}
+                    {/* 🆕 Info Overlay con timestamp relativo */}
                     <div className="absolute bottom-0 left-0 right-0 p-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <p className="font-semibold text-sm truncate">{photo.uploaderName}</p>
                       <p className="text-xs opacity-75">{photo.eventMoment}</p>
-                      <p className="text-xs opacity-75">{formatDate(photo.uploadedAt)}</p>
+                      <p className="text-xs opacity-75 font-medium">{getRelativeTime(photo.uploadedAt)}</p>
                     </div>
 
                     {/* Icono de love en la esquina */}
-                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <Heart size={20} style={{ color: VIP_COLORS.rosaAurora }} fill="white" />
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <Heart size={24} style={{ color: VIP_COLORS.rosaAurora }} fill="white" />
                     </div>
                   </div>
                 ))}
               </div>
             )}
           </>
+        )}
+
+        {/* 🆕 Botón Load More */}
+        {!loading && photos.length > 0 && hasMorePhotos && (
+          <div className="text-center py-8 mb-8">
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="group relative px-8 py-4 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed vip-shimmer-aurora"
+              style={{
+                background: `linear-gradient(135deg, ${VIP_COLORS.rosaAurora}, ${VIP_COLORS.lavandaAurora})`
+              }}
+            >
+              {loadingMore ? (
+                <>
+                  <Loader2 size={20} className="animate-spin mr-2 inline" />
+                  Cargando más fotos...
+                </>
+              ) : (
+                <>
+                  <ChevronDown size={20} className="mr-2 inline group-hover:animate-bounce" />
+                  Ver más fotos ({totalPhotos - photos.length} restantes)
+                </>
+              )}
+            </button>
+            
+            {/* Información de progreso */}
+            <div className="mt-4 text-sm" style={{ color: VIP_COLORS.rosaIntensa }}>
+              Mostrando {photos.length} de {totalPhotos} fotos
+              {currentPage > 1 && (
+                <span className="ml-2">• Página {currentPage}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Indicador de carga Load More */}
+        {loadingMore && (
+          <div className="text-center py-8 mb-8">
+            <Loader2 size={32} className="animate-spin mx-auto mb-4 vip-pulse-aurora" style={{ color: VIP_COLORS.rosaAurora }} />
+            <p style={{ color: VIP_COLORS.rosaIntensa }}>Cargando más recuerdos...</p>
+          </div>
         )}
 
         {/** Regresar al hasta arriba */}
@@ -492,44 +674,27 @@ const DinamicGallery: React.FC = () => {
           </Link>
         </div>
 
-        {/* Paginación - Temporalmente deshabilitada */}
-        {pagination && pagination.pages > 1 && false && (
-          <div className="flex items-center justify-center space-x-4">
-            <button
-              disabled={true}
-              className="flex items-center px-4 py-2 rounded-lg border-2 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+        {/* 🆕 Información de Galería - Reemplaza paginación tradicional */}
+        {photos.length > 0 && (
+          <div className="text-center py-6">
+            <div 
+              className="inline-flex items-center px-6 py-3 rounded-full border-2"
               style={{
-                borderColor: VIP_COLORS.oroAurora,
-                color: VIP_COLORS.rosaAurora,
-                backgroundColor: 'transparent'
+                background: `linear-gradient(135deg, ${VIP_COLORS.cremaSuave}, ${VIP_COLORS.blancoSeda})`,
+                borderColor: `${VIP_COLORS.oroAurora}60`,
+                color: VIP_COLORS.rosaIntensa
               }}
             >
-              <ChevronLeft size={18} className="mr-1" />
-              Anterior
-            </button>
-
-            <span 
-              className="px-4 py-2 rounded-lg"
-              style={{
-                background: `linear-gradient(135deg, ${VIP_COLORS.rosaAurora}, ${VIP_COLORS.rosaIntensa})`,
-                color: 'white'
-              }}
-            >
-              {pagination?.page || 1} de {pagination?.pages || 1}
-            </span>
-
-            <button
-              disabled={true}
-              className="flex items-center px-4 py-2 rounded-lg border-2 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                borderColor: VIP_COLORS.oroAurora,
-                color: VIP_COLORS.rosaAurora,
-                backgroundColor: 'transparent'
-              }}
-            >
-              Siguiente
-              <ChevronRight size={18} className="ml-1" />
-            </button>
+              <ImageIcon size={18} className="mr-2" />
+              <span className="font-medium">
+                {photos.length} de {totalPhotos} fotos cargadas
+              </span>
+              {hasMorePhotos && (
+                <span className="ml-2 text-sm opacity-75">
+                  • {totalPhotos - photos.length} más disponibles
+                </span>
+              )}
+            </div>
           </div>
         )}
       </div>

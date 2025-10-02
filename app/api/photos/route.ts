@@ -48,46 +48,94 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const category = searchParams.get('category')
-    const tag = searchParams.get('tag')
-    const search = searchParams.get('search')
+    const limit = parseInt(searchParams.get('limit') || '20') // ✅ Mantenemos 20 como óptimo
+    
+    // 🎯 Filtros específicos para galería de quinceañera
+    const eventMoment = searchParams.get('eventMoment')
+    const uploaderName = searchParams.get('uploaderName')
+    const uploadSource = searchParams.get('uploadSource')
+    const sortBy = searchParams.get('sortBy') || 'uploadedAt'
+    const sortOrder = searchParams.get('sortOrder') || 'desc'
+    const isPublic = searchParams.get('isPublic')
+    const status = searchParams.get('status')
 
+    // 🔍 Construir query optimizada
     const query: Record<string, unknown> = {}
     
-    if (category) {
-      query.category = category
+    // Filtros específicos de la galería
+    if (eventMoment && eventMoment !== 'all') {
+      query.eventMoment = eventMoment
     }
     
-    if (tag) {
-      query.tags = { $in: [tag] }
+    if (uploaderName && uploaderName !== 'all') {
+      query['uploader.name'] = uploaderName
     }
     
-    if (search) {
-      query.$or = [
-        { description: { $regex: search, $options: 'i' } },
-        { tags: { $in: [new RegExp(search, 'i')] } }
-      ]
+    if (uploadSource && uploadSource !== 'all') {
+      query.uploadSource = uploadSource === 'local' ? 'original' : uploadSource
     }
 
+    if (isPublic) {
+      query.isPublic = isPublic === 'true'
+    }
+
+    if (status) {
+      query.status = status
+    }
+
+    // 📊 Cálculos de paginación
     const skip = (page - 1) * limit
+    
+    // 🚀 Definir orden (siempre fotos más recientes primero por defecto)
+    const sortConfig: Record<string, 1 | -1> = {}
+    sortConfig[sortBy] = sortOrder === 'asc' ? 1 : -1
 
+    console.log('📸 Photos API Query:', { 
+      query, 
+      page, 
+      limit, 
+      sortBy, 
+      sortOrder,
+      skip 
+    })
+
+    // 🎯 Consulta optimizada con campos selectivos
     const [photos, total] = await Promise.all([
       Photo.find(query)
-        .sort({ uploadDate: -1 })
+        .sort(sortConfig) // ✅ Orden dinámico, por defecto uploadedAt desc
         .skip(skip)
         .limit(limit)
-        .lean(),
+        .select('filename originalName uploadedAt eventMoment comment cloudinaryUrl localPath uploadSource fileSize mimeType dimensions viewCount status isPublic uploader') // ✅ Solo campos necesarios
+        .populate('uploader', 'name') // ✅ Optimizar populate
+        .lean(), // ✅ Performance boost
       Photo.countDocuments(query)
     ])
 
+    // 📊 Información de paginación mejorada
+    const pages = Math.ceil(total / limit)
+    const hasNext = page < pages
+    const hasPrev = page > 1
+
+    console.log('✅ Photos fetched:', { 
+      count: photos.length, 
+      total, 
+      page, 
+      pages, 
+      hasNext, 
+      hasPrev 
+    })
+
     return NextResponse.json({
+      success: true,
       photos,
       pagination: {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages,
+        hasNext, // ✅ Información útil para Load More
+        hasPrev, // ✅ Información útil para navegación
+        totalPages: pages // ✅ Alias por compatibilidad
       }
     })
   } catch (error) {

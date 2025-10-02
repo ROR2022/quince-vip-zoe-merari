@@ -109,6 +109,13 @@ interface HybridGalleryState {
   // 🗑️ Estados para eliminación de fotos
   deletingPhotos: string[]; // IDs de fotos siendo eliminadas
   deleteError: string | null;
+  // 🆕 Estados para Load More y refresh manual
+  loadingMore: boolean;        // Cargando más fotos
+  hasMorePhotos: boolean;      // Hay más fotos disponibles
+  currentPage: number;         // Página actual
+  totalPhotos: number;         // Total de fotos en la galería
+  lastRefreshTime: number;     // Timestamp del último refresh
+  newPhotosAvailable: number;  // Fotos nuevas detectadas
 }
 
 /**
@@ -131,7 +138,14 @@ export const useHybridGallery = () => {
     },
     // 🗑️ Estados iniciales para eliminación
     deletingPhotos: [],
-    deleteError: null
+    deleteError: null,
+    // 🆕 Estados iniciales para Load More y refresh manual
+    loadingMore: false,
+    hasMorePhotos: true,
+    currentPage: 1,
+    totalPhotos: 0,
+    lastRefreshTime: Date.now(),
+    newPhotosAvailable: 0
   });
 
   /**
@@ -201,7 +215,7 @@ export const useHybridGallery = () => {
   /**
    * 🆕 Obtiene fotos desde MongoDB API
    */
-  const fetchPhotosFromMongoDB = useCallback(async (page = 1, limit = 50): Promise<{ photos: HybridPhoto[], pagination: HybridGalleryPagination }> => {
+  const fetchPhotosFromMongoDB = useCallback(async (page = 1, limit = 20): Promise<{ photos: HybridPhoto[], pagination: HybridGalleryPagination }> => {
     try {
       // Construir query parameters
       const queryParams = new URLSearchParams({
@@ -317,7 +331,7 @@ export const useHybridGallery = () => {
   }, []);
 
   /**
-   * 🆕 Carga fotos desde MongoDB
+   * 🆕 Carga fotos desde MongoDB (página inicial o refresh completo)
    */
   const loadPhotos = useCallback(async (page = 1) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
@@ -331,10 +345,16 @@ export const useHybridGallery = () => {
 
       setState(prev => ({
         ...prev,
-        photos,
+        photos, // ✅ Replace completo (no append)
         stats,
         pagination,
-        loading: false
+        loading: false,
+        // 🆕 Actualizar estados de Load More
+        currentPage: page,
+        totalPhotos: pagination.total,
+        hasMorePhotos: pagination.hasNext,
+        lastRefreshTime: Date.now(),
+        newPhotosAvailable: 0 // Reset después de cargar
       }));
 
     } catch (error) {
@@ -347,6 +367,57 @@ export const useHybridGallery = () => {
   }, [fetchPhotosFromMongoDB, fetchStatsFromMongoDB]);
 
   /**
+   * 🆕 Carga más fotos (Load More functionality)
+   */
+  const loadMorePhotos = useCallback(async () => {
+    // Validaciones de seguridad
+    if (state.loadingMore || !state.hasMorePhotos || state.loading) {
+      console.warn('Load More aborted:', { 
+        loadingMore: state.loadingMore, 
+        hasMorePhotos: state.hasMorePhotos, 
+        loading: state.loading 
+      });
+      return;
+    }
+
+    setState(prev => ({ ...prev, loadingMore: true, error: null }));
+
+    try {
+      const nextPage = state.currentPage + 1;
+      console.log('🔄 Loading more photos - page:', nextPage);
+
+      const { photos: newPhotos, pagination } = await fetchPhotosFromMongoDB(nextPage);
+
+      setState(prev => ({
+        ...prev,
+        photos: [...prev.photos, ...newPhotos], // ✅ Append nuevas fotos
+        loadingMore: false,
+        currentPage: nextPage,
+        hasMorePhotos: pagination.hasNext,
+        pagination: {
+          ...pagination,
+          // Mantener el total de fotos cargadas hasta ahora
+          displayedTotal: prev.photos.length + newPhotos.length
+        }
+      }));
+
+      console.log('✅ More photos loaded successfully:', { 
+        newCount: newPhotos.length, 
+        totalLoaded: state.photos.length + newPhotos.length,
+        hasMore: pagination.hasNext 
+      });
+
+    } catch (error) {
+      console.error('❌ Error loading more photos:', error);
+      setState(prev => ({
+        ...prev,
+        loadingMore: false,
+        error: error instanceof Error ? error.message : 'Error cargando más fotos'
+      }));
+    }
+  }, [state.loadingMore, state.hasMorePhotos, state.loading, state.currentPage, state.photos.length, fetchPhotosFromMongoDB]);
+
+  /**
    * Actualiza filtros y recarga fotos
    */
   const setFilters = useCallback((newFilters: Partial<HybridGalleryFilters>) => {
@@ -357,11 +428,87 @@ export const useHybridGallery = () => {
   }, []);
 
   /**
-   * Refresca la galería
+   * 🆕 Verifica si hay fotos nuevas (refresh manual)
    */
-  const refresh = useCallback(() => {
-    loadPhotos(1);
-  }, [loadPhotos]);
+  const checkForNewPhotos = useCallback(async () => {
+    if (state.photos.length === 0) return { hasNew: false, count: 0 };
+
+    try {
+      // Usar la fecha de la foto más reciente como referencia
+      const latestPhotoDate = state.photos[0]?.uploadedAt;
+      if (!latestPhotoDate) return { hasNew: false, count: 0 };
+
+      const response = await fetch(`/api/photos/check-new?since=${latestPhotoDate}`);
+      if (!response.ok) throw new Error('Error verificando fotos nuevas');
+
+      const data = await response.json();
+      console.log('🔍 Check new photos result:', data);
+
+      if (data.success && data.hasNew) {
+        setState(prev => ({ 
+          ...prev, 
+          newPhotosAvailable: data.count 
+        }));
+      }
+
+      return {
+        hasNew: data.hasNew || false,
+        count: data.count || 0,
+        recentPhotos: data.recentPhotos || []
+      };
+
+    } catch (error) {
+      console.error('❌ Error checking for new photos:', error);
+      return { hasNew: false, count: 0 };
+    }
+  }, [state.photos]);
+
+  /**
+   * 🔄 Refresca la galería completa (manual refresh)
+   */
+  const refresh = useCallback(async () => {
+    console.log('🔄 Manual refresh triggered');
+    
+    // Reset a página 1 y cargar desde el inicio
+    await loadPhotos(1);
+    
+    // También actualizar stats
+    try {
+      const stats = await fetchStatsFromMongoDB();
+      setState(prev => ({ ...prev, stats }));
+    } catch (error) {
+      console.warn('Could not update stats during refresh:', error);
+    }
+  }, [loadPhotos, fetchStatsFromMongoDB]);
+
+  /**
+   * 🔄 Refresh suave - solo agrega fotos nuevas al inicio
+   */
+  const softRefresh = useCallback(async () => {
+    const newPhotosCheck = await checkForNewPhotos();
+    
+    if (newPhotosCheck.hasNew) {
+      // Cargar página 1 y prepend las nuevas fotos
+      const { photos: latestPhotos } = await fetchPhotosFromMongoDB(1);
+      
+      setState(prev => {
+        // Filtrar fotos que ya no están para evitar duplicados
+        const existingIds = new Set(prev.photos.map(p => p.id));
+        const trulyNewPhotos = latestPhotos.filter(photo => !existingIds.has(photo.id));
+        
+        return {
+          ...prev,
+          photos: [...trulyNewPhotos, ...prev.photos], // Prepend nuevas fotos
+          newPhotosAvailable: 0, // Reset contador
+          lastRefreshTime: Date.now()
+        };
+      });
+      
+      console.log('✅ Soft refresh completed, added new photos:', newPhotosCheck.count);
+    }
+    
+    return newPhotosCheck;
+  }, [checkForNewPhotos, fetchPhotosFromMongoDB]);
 
   /**
    * Cambia a página específica
@@ -496,22 +643,37 @@ export const useHybridGallery = () => {
   }, [loadPhotos, state.filters.eventMoment, state.filters.uploader, state.filters.source, state.filters.sortBy, state.filters.sortOrder]);
 
   return {
+    // 📸 Estados principales
     photos: state.photos,
     loading: state.loading,
     error: state.error,
     stats: state.stats,
     pagination: state.pagination,
     filters: state.filters,
+    
+    // 🔧 Funciones básicas
     setFilters,
     refresh,
     goToPage,
     getPhotoDisplayUrl,
     incrementPhotoView,
+    
     // 🗑️ Funciones de eliminación
     deletePhoto,
     isPhotoDeleting,
     deletingPhotos: state.deletingPhotos,
     deleteError: state.deleteError,
-    clearDeleteError
+    clearDeleteError,
+    
+    // 🆕 Funciones Load More y refresh manual
+    loadMorePhotos,
+    loadingMore: state.loadingMore,
+    hasMorePhotos: state.hasMorePhotos,
+    currentPage: state.currentPage,
+    totalPhotos: state.totalPhotos,
+    checkForNewPhotos,
+    softRefresh,
+    newPhotosAvailable: state.newPhotosAvailable,
+    lastRefreshTime: state.lastRefreshTime
   };
 };
