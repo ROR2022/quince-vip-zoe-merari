@@ -1,8 +1,8 @@
 "use client"
-import React from 'react'
+import React, { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { QrCode, Camera, Heart, Sparkles } from 'lucide-react'
+import { QrCode as QrCodeIcon, Camera, Heart, Sparkles, Download, Eye } from 'lucide-react'
 import QRDownloadContainer from './QRDownloadContainer'
 
 // Paleta Aurora VIP para Quinceañera - Temática consistente
@@ -22,6 +22,45 @@ const VIP_COLORS = {
 //con los datos principales de la invitación
 
 const QRCode = () => {
+  // Estados para manejo de descarga y feedback
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [toast, setToast] = useState("");
+
+  // Función principal: Descarga automática del QR
+  const handleDownloadQR = async () => {
+    setIsDownloading(true);
+    setToast("Iniciando descarga...");
+    
+    try {
+      const response = await fetch('/images/qrCodeFoto.jpg');
+      if (!response.ok) throw new Error('Error al cargar la imagen');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'QRCode_XV.jpg';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      setToast("¡QR descargado exitosamente! ✨");
+      setTimeout(() => setToast(""), 3000);
+    } catch (error) {
+      console.error('Error descargando QR:', error);
+      setToast("Error al descargar. Inténtalo nuevamente.");
+      setTimeout(() => setToast(""), 3000);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Función secundaria: Vista previa del QR
+  const handlePreviewQR = () => {
+    window.open('/images/qrCodeFoto.jpg', '_blank', 'width=700,height=700,scrollbars=yes,resizable=yes');
+  };
+
     //
   return (
     <div 
@@ -53,9 +92,7 @@ const QRCode = () => {
         }}
       /> 
 
-      {/* Contenedor principal */}
-      <div className="text-center z-10 max-w-md mx-auto ">
-        {/* Header con temática quinceañera */}
+{/* Header con temática quinceañera */}
         <div className="mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Sparkles className="w-6 h-6" style={{ color: VIP_COLORS.oroAurora }} />
@@ -78,11 +115,17 @@ const QRCode = () => {
           >
             ZOE MERARI
           </h1>
+        </div>
 
+      {/* Contenedor principal */}
+      <div className="text-center z-10 flex flex-col md:flex-row gap-8 justify-center items-center mx-auto ">
+        
+
+        <div>
           <div className='mb-6'>
             <Image
               src="/images/zoeMerari3.jpg"
-              alt="Frida"
+              alt="Zoe Merari - Quinceañera"
               width={200}
               height={150}
               className="mx-auto rounded-lg"
@@ -124,7 +167,7 @@ const QRCode = () => {
           />
 
           <div className="relative z-10">
-            <QrCode 
+            <QrCodeIcon 
               className="w-8 h-8 mx-auto mb-4" 
               style={{ color: VIP_COLORS.rosaAurora }} 
             />
@@ -162,27 +205,105 @@ const QRCode = () => {
           >
             ✨ Galería Dinámica ✨
           </p>
+
+           {/* Footer elegante */}
+        <p 
+          className="mt-6 text-sm italic"
+          style={{ color: VIP_COLORS.lavandaIntensa, opacity: 0.8 }}
+        >
+          &quot;Comparte momentos únicos en mi día especial&quot;
+        </p>
         </div>
 
+<div
+//style={{ display:'none'}}
+>
         {/* Sección de descarga de QR */}
-        <div 
-        //style={{display:'none'}}
-        className="mb-8">
-          <QRDownloadContainer 
+        <div className="mb-8">
+          {/* <QRDownloadContainer 
             eventData={{
-              name: "ZOE MERARI",
+              name: "FRIDA",
               title: "Mis XV Años",
-              date: "18 de Octubre 2025",
-              venue: "Paseo Real Casino 480",
-              qrCodeUrl: "https://quince-vip-zoe-merari.vercel.app/gallery",
-              photoUrl: "/images/qrcode.png",
-              websiteUrl: "https://quince-vip-zoe-merari.vercel.app/qrcode",
+              date: "27 de Septiembre 2025",
+              venue: "Salón de Eventos Aurora",
+              qrCodeUrl: "https://quince-premium-frida.vercel.app/gallery",
+              photoUrl: "/images/frida6.jpg",
+              websiteUrl: "https://quince-premium-frida.vercel.app/gallery",
               message: "Comparte momentos únicos en mi día especial"
             }}
-          />
+          /> */}
+
+          {/* Contenedor de botones de QR */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            {/* Botón principal - Descargar QR */}
+            <button 
+              onClick={handleDownloadQR}
+              disabled={isDownloading}
+              className={`group relative px-8 py-4 rounded-full font-semibold text-white transition-all duration-300 hover:scale-105 hover:shadow-xl overflow-hidden ${
+                isDownloading ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'
+              }`}
+              style={{
+                background: `linear-gradient(45deg, ${VIP_COLORS.rosaAurora} 0%, ${VIP_COLORS.lavandaAurora} 50%, ${VIP_COLORS.oroAurora} 100%)`,
+                boxShadow: `0 8px 20px rgba(233, 30, 99, 0.4)`
+              }}
+            >
+              {/* Efecto shimmer */}
+              <div 
+                className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+                  isDownloading ? 'animate-pulse' : ''
+                }`}
+                style={{
+                  background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%)',
+                  transform: 'translateX(-100%)',
+                  animation: isDownloading ? 'shimmer 1.5s infinite' : 'shimmer 2s infinite'
+                }}
+              />
+              
+              <span className="relative z-10 flex items-center gap-2">
+                {isDownloading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Descargando...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-5 h-5" />
+                    Descargar QR
+                    <Sparkles className="w-5 h-5" />
+                  </>
+                )}
+              </span>
+            </button>
+
+            {/* Botón secundario - Ver QR */}
+            <button 
+              onClick={handlePreviewQR}
+              className="group relative px-6 py-3 rounded-full font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg overflow-hidden border-2"
+              style={{
+                background: `linear-gradient(45deg, ${VIP_COLORS.blancoSeda} 0%, ${VIP_COLORS.cremaSuave} 100%)`,
+                color: VIP_COLORS.lavandaIntensa,
+                borderColor: VIP_COLORS.lavandaAurora,
+                boxShadow: `0 4px 12px rgba(156, 39, 176, 0.2)`
+              }}
+            >
+              {/* Efecto shimmer sutil */}
+              <div 
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{
+                  background: 'linear-gradient(45deg, transparent 30%, rgba(156, 39, 176, 0.1) 50%, transparent 70%)',
+                  transform: 'translateX(-100%)',
+                  animation: 'shimmer 2s infinite'
+                }}
+              />
+              
+              <span className="relative z-10 flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                Ver QR
+                <Heart className="w-4 h-4" />
+              </span>
+            </button>
+          </div>
         </div>
-
-
 
             {/**Sección de Links */}
         <div className='flex flex-col gap-2'>
@@ -262,22 +383,40 @@ const QRCode = () => {
             />
             
             <span className="relative z-10 flex items-center gap-2">
-              <QrCode className="w-5 h-5" />
+              <QrCodeIcon className="w-5 h-5" />
               Ir a Galería
               <Heart className="w-5 h-5" />
             </span>
           </button>
         </Link>
         </div>
-
-        {/* Footer elegante */}
-        <p 
-          className="mt-6 text-sm italic"
-          style={{ color: VIP_COLORS.lavandaIntensa, opacity: 0.8 }}
-        >
-          &quot;Comparte momentos únicos en mi día especial&quot;
-        </p>
+</div>
+       
       </div>
+
+      {/* Sistema de notificaciones Toast */}
+      {toast && (
+        <div 
+          className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 rounded-2xl shadow-2xl transition-all duration-300 animate-bounce"
+          style={{
+            background: `linear-gradient(45deg, ${VIP_COLORS.blancoSeda} 0%, ${VIP_COLORS.cremaSuave} 100%)`,
+            border: `2px solid ${VIP_COLORS.oroAurora}`,
+            color: VIP_COLORS.lavandaIntensa,
+            boxShadow: `0 10px 30px rgba(233, 30, 99, 0.3)`
+          }}
+        >
+          <div className="flex items-center gap-2">
+            {toast.includes('exitosamente') ? (
+              <Heart className="w-5 h-5" style={{ color: VIP_COLORS.rosaAurora }} />
+            ) : toast.includes('Error') ? (
+              <QrCodeIcon className="w-5 h-5" style={{ color: VIP_COLORS.rosaIntensa }} />
+            ) : (
+              <Sparkles className="w-5 h-5" style={{ color: VIP_COLORS.oroAurora }} />
+            )}
+            <span className="font-medium">{toast}</span>
+          </div>
+        </div>
+      )}
 
       {/* Animación shimmer */}
       <style jsx>{`

@@ -7,7 +7,7 @@ import Image from "next/image"
 
 const QRDownloadCard = forwardRef<HTMLDivElement, QRDownloadCardProps>(
   ({ eventData, className = "", style = {} }, ref) => {
-    const { qrDataURL, generateQR, qrCodeUrl } = useQRGeneration(eventData)
+    const { qrDataURL, generateQR } = useQRGeneration(eventData)
 
     // Generar QR automáticamente al montar
     React.useEffect(() => {
@@ -289,7 +289,7 @@ const QRDownloadCard = forwardRef<HTMLDivElement, QRDownloadCardProps>(
               fontWeight: "500",
             }}
           >
-            {qrCodeUrl}
+            https://quince-premium-frida.vercel.app/gallery
           </div>
 
           {/* Message */}

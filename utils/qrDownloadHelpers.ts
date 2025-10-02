@@ -63,16 +63,120 @@ export const dataURLtoBlob = (dataURL: string): Blob => {
   return new Blob([u8arr], { type: mime });
 };
 
-// Trigger de descarga
+// Trigger de descarga con logging mejorado
 export const triggerDownload = (blob: Blob, fileName: string): void => {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  const startTime = Date.now();
+  
+  // Detectar dispositivo
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  
+  console.log('🔽 [triggerDownload] Iniciando descarga:', {
+    fileName,
+    blobSize: blob.size,
+    blobType: blob.type,
+    isIOS,
+    isSafari,
+    userAgent: navigator.userAgent
+  });
+
+  try {
+    const url = URL.createObjectURL(blob);
+    console.log('🔗 [triggerDownload] URL del blob creada:', {
+      url: url.substring(0, 50) + '...',
+      urlLength: url.length
+    });
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    
+    // Configuraciones específicas para iOS
+    if (isIOS) {
+      console.log('📱 [triggerDownload] Aplicando configuración para iOS');
+      link.target = '_blank'; // Abrir en nueva ventana para iOS
+      link.rel = 'noopener noreferrer';
+    }
+    
+    console.log('🔧 [triggerDownload] Elemento <a> configurado:', {
+      href: link.href.substring(0, 50) + '...',
+      download: link.download,
+      target: link.target || 'default'
+    });
+
+    document.body.appendChild(link);
+    console.log('➕ [triggerDownload] Elemento agregado al DOM');
+
+    // Intentar click con diferentes métodos para iOS
+    if (isIOS) {
+      console.log('📱 [triggerDownload] Usando método de click específico para iOS');
+      
+      // Método 1: Click directo
+      try {
+        link.click();
+        console.log('✅ [triggerDownload] Click directo exitoso en iOS');
+      } catch (clickError) {
+        console.error('❌ [triggerDownload] Error en click directo iOS:', clickError);
+        
+        // Método 2: Evento sintético
+        try {
+          const event = new MouseEvent('click', {
+            view: window,
+            bubbles: true,
+            cancelable: true
+          });
+          link.dispatchEvent(event);
+          console.log('✅ [triggerDownload] Evento sintético exitoso en iOS');
+        } catch (eventError) {
+          console.error('❌ [triggerDownload] Error en evento sintético iOS:', eventError);
+          
+          // Método 3: Abrir directamente la URL
+          try {
+            window.open(url, '_blank');
+            console.log('✅ [triggerDownload] window.open exitoso en iOS');
+          } catch (openError) {
+            console.error('❌ [triggerDownload] Error en window.open iOS:', openError);
+          }
+        }
+      }
+    } else {
+      // Método estándar para otros dispositivos
+      link.click();
+      console.log('✅ [triggerDownload] Click estándar exitoso');
+    }
+
+    // Cleanup con delay para iOS
+    const cleanupDelay = isIOS ? 3000 : 100;
+    setTimeout(() => {
+      try {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        console.log('🧹 [triggerDownload] Cleanup completado', {
+          duration: Date.now() - startTime,
+          device: isIOS ? 'iOS' : 'Other'
+        });
+      } catch (cleanupError) {
+        console.error('⚠️ [triggerDownload] Error en cleanup:', cleanupError);
+      }
+    }, cleanupDelay);
+
+  } catch (error) {
+    console.error('💥 [triggerDownload] Error general:', {
+      error,
+      fileName,
+      blobSize: blob.size,
+      isIOS,
+      duration: Date.now() - startTime
+    });
+    
+    // Fallback para iOS: mostrar instrucciones al usuario
+    if (isIOS) {
+      console.error('📱 [triggerDownload] FALLBACK iOS - Mostrando instrucciones al usuario');
+      alert(`⚠️ PROBLEMA DE DESCARGA EN iOS\n\nEl archivo "${fileName}" no se pudo descargar automáticamente.\n\nINSTRUCCIONES:\n1. Mantén presionado este botón\n2. Selecciona "Guardar en Archivos"\n3. O toma una captura de pantalla de la vista previa\n\nSi el problema persiste, contacta soporte.`);
+    }
+    
+    throw error;
+  }
 };
 
 // Formateo de fecha para display
