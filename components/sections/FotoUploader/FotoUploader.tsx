@@ -34,6 +34,9 @@ const FotoUploader: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Estados para notificaciones de compresión
+  const [compressionNotifications, setCompressionNotifications] = useState<string[]>([]);
+
   // Estados para auto-reset después del éxito
   const [countdown, setCountdown] = useState(0);
   const [autoResetEnabled, setAutoResetEnabled] = useState(true);
@@ -134,6 +137,15 @@ const FotoUploader: React.FC = () => {
       countdownTimerRef.current = null;
     }
   }, [resetUpload]);
+
+  // Handler para notificaciones de compresión
+  const addCompressionNotification = useCallback((message: string) => {
+    setCompressionNotifications(prev => [...prev, message]);
+    // Auto-limpiar después de 5 segundos
+    setTimeout(() => {
+      setCompressionNotifications(prev => prev.filter(m => m !== message));
+    }, 5000);
+  }, []);
 
   // Cancelar auto-reset
   const cancelAutoReset = () => {
@@ -297,6 +309,36 @@ const FotoUploader: React.FC = () => {
             )}
           </div>
 
+          {/* Notificaciones de compresión automática */}
+          {compressionNotifications.length > 0 && (
+            <div className="mb-4 space-y-2">
+              {compressionNotifications.map((notification, index) => (
+                <div
+                  key={index}
+                  className="p-3 rounded-lg border-l-4 animate-fadeIn"
+                  style={{
+                    backgroundColor: `${VIP_COLORS.oroAurora}10`,
+                    borderColor: VIP_COLORS.oroAurora,
+                  }}
+                >
+                  <div className="flex items-center">
+                    <Camera
+                      size={16}
+                      style={{ color: VIP_COLORS.oroAurora }}
+                      className="mr-2"
+                    />
+                    <p 
+                      className="text-sm"
+                      style={{ color: VIP_COLORS.oroAurora }}
+                    >
+                      {notification}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div
             className="inline-block text-black px-6 py-3 rounded-full text-sm font-semibold mb-6 shadow-xl border-2"
             style={{
@@ -406,8 +448,11 @@ const FotoUploader: React.FC = () => {
                 //style={{ color: VIP_COLORS.lavandaAurora }}
               >
                 <p>📁 Formatos: JPG, PNG, WEBP</p>
-                <p>📏 Tamaño máximo: 4.5MB por foto</p>
+                <p>📏 Tamaño: Hasta 10MB (optimización automática)</p>
                 <p>🖼️ Hasta 10 fotos a la vez</p>
+                <p className="text-green-600">
+                  ⚡ Compresión inteligente para archivos grandes
+                </p>
                 {systemType === "cloudinary" && (
                   <p className="text-blue-600">
                     ☁️ Optimización automática en la nube

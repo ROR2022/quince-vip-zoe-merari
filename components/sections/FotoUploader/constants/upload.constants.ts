@@ -4,7 +4,7 @@ import { UploadConfig } from '../types/upload.types';
 
 // Configuración principal del upload
 export const UPLOAD_CONFIG: UploadConfig = {
-  maxFileSize: 10 * 1024 * 1024, // 10MB
+  maxFileSize: 4.5 * 1024 * 1024, // 4.5MB - Límite unificado
   maxFiles: 10,
   allowedFormats: ['image/jpeg', 'image/png', 'image/webp'],
   compressionOptions: {

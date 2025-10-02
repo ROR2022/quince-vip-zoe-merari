@@ -7,7 +7,7 @@ import { validateCloudinaryConfig } from '@/lib/cloudinary';
 
 // Configuración del upload
 const UPLOAD_CONFIG = {
-  maxFileSize: 10 * 1024 * 1024, // 10MB
+  maxFileSize: 4.5 * 1024 * 1024, // 4.5MB - Límite unificado con frontend
   allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
   maxFiles: 10,
 };

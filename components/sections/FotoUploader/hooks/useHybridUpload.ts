@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { UploadState, UploaderFormData, UploadFile } from '../types/upload.types';
 import { validateFileList, generateFileId } from '../utils/imageValidation';
+import { compressImage, needsCompression } from '../utils/imageCompression';
 // import { ERROR_MESSAGES } from '@/components/sections/FotoUploader/constants/upload.constants';
 
 // 🔌 Activar interceptor de logs para envío automático al servidor
@@ -489,23 +490,44 @@ export const useHybridUpload = () => {
         type: f.type
       })));
 
-      // 📏 NUEVA VALIDACIÓN: Verificar tamaño máximo de archivos (4.5MB)
+      // � COMPRESIÓN AUTOMÁTICA: Procesar archivos grandes
       const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5MB
-      console.log('📏 useHybridUpload: Verificando tamaño máximo de archivos (4.5MB)...');
-      
-      for (const file of fileArray) {
+      console.log('� useHybridUpload: Iniciando procesamiento inteligente de archivos...');
+
+      const processedFiles: File[] = [];
+      for (let i = 0; i < fileArray.length; i++) {
+        const file = fileArray[i];
+        const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
+        
         if (file.size > MAX_FILE_SIZE) {
-          const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
-          const errorMessage = `El archivo "${file.name}" es demasiado grande (${fileSizeMB}MB). Máximo permitido: 4.5MB`;
-          console.error('❌ useHybridUpload: Archivo demasiado grande:', {
-            fileName: file.name,
-            fileSize: fileSizeMB + 'MB',
-            maxAllowed: '4.5MB'
-          });
-          throw new Error(errorMessage);
+          console.log(`📸 useHybridUpload: Archivo grande detectado: ${file.name} (${fileSizeMB}MB)`);
+          
+          try {
+            console.log(`🔄 useHybridUpload: Comprimiendo ${file.name}...`);
+            const compressedFile = await compressImage(file);
+            const compressedSizeMB = (compressedFile.size / 1024 / 1024).toFixed(1);
+            
+            console.log(`✅ useHybridUpload: Compresión exitosa: ${fileSizeMB}MB → ${compressedSizeMB}MB`);
+            processedFiles.push(compressedFile);
+            
+            // TODO: Agregar notificación de optimización al usuario
+            
+          } catch (compressionError) {
+            console.error(`❌ useHybridUpload: Error comprimiendo ${file.name}:`, compressionError);
+            const errorMessage = `No se pudo optimizar "${file.name}" (${fileSizeMB}MB). Intenta con una imagen de menor resolución.`;
+            throw new Error(errorMessage);
+          }
+        } else {
+          console.log(`✅ useHybridUpload: Archivo dentro del límite: ${file.name} (${fileSizeMB}MB)`);
+          processedFiles.push(file);
         }
       }
-      console.log('✅ useHybridUpload: Todos los archivos tienen tamaño válido');
+
+      // Actualizar array de archivos con versiones procesadas
+      fileArray.length = 0;
+      fileArray.push(...processedFiles);
+
+      console.log(`🎉 useHybridUpload: Procesamiento completado. ${processedFiles.length} archivos listos para upload`);
       
       // Crear FileList mock para validación
       const fileList = {
