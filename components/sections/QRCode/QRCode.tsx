@@ -106,7 +106,7 @@ const QRCode = () => {
           </div>
           
           <h1 
-            className="text-5xl font-bold mb-4 tracking-wide"
+            className="text-5xl font-bold mb-4 tracking-wide text-center"
             style={{ 
               color: VIP_COLORS.rosaAurora,
               textShadow: `2px 2px 4px rgba(233, 30, 99, 0.3)`,
