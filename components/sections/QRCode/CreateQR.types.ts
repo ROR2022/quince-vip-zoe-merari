@@ -9,6 +9,7 @@ export interface QROptions {
 
 export interface CreateQRState {
   url: string;
+  name: string | undefined;
   isValidUrl: boolean;
   qrOptions: QROptions;
   isGenerating: boolean;

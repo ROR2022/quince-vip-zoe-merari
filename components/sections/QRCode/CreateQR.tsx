@@ -29,13 +29,14 @@ import styles from './CreateQR.module.css';
 
 interface CreateQRProps {
   urlLink: string;
+  name?: string; // Nombre del invitado (opcional)
 }
 
 //https://quince-premium-frida.vercel.app/invitados/68b22163c8fce5afcf5fd7ce
 //https://quince-premium-frida.vercel.app/invitados/68b22163c8fce5afcf5fd7ce
 
 // 🎯 Componente CreateQR - Generador de códigos QR personalizados
-const CreateQR: React.FC<CreateQRProps> = ({urlLink}) => {
+const CreateQR: React.FC<CreateQRProps> = ({urlLink, name}) => {
   console.log('🚀 [CreateQR] Componente inicializado con props:', {
     urlLink: urlLink,
     urlLinkType: typeof urlLink,
@@ -48,6 +49,7 @@ const CreateQR: React.FC<CreateQRProps> = ({urlLink}) => {
   const [state, setState] = useState<CreateQRState>(() => {
     const initialState = {
       url: urlLink,
+      name: name,
       isValidUrl: false,
       qrOptions: DEFAULT_QR_OPTIONS,
       isGenerating: false,
@@ -370,6 +372,7 @@ const CreateQR: React.FC<CreateQRProps> = ({urlLink}) => {
   const handleReset = useCallback(() => {
     setState({
       url: '',
+      name: undefined,
       isValidUrl: false,
       qrOptions: DEFAULT_QR_OPTIONS,
       isGenerating: false,
@@ -628,6 +631,7 @@ const CreateQR: React.FC<CreateQRProps> = ({urlLink}) => {
           <div className={styles.previewContainer}>
             {qrDataURL ? (
               <>
+              <h2 className='text-3xl font-bold'>Invitado: {name}</h2>
                 <Image
                   src={qrDataURL}
                   alt="Código QR generado"
